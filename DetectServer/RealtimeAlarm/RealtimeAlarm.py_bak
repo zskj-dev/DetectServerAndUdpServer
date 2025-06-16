@@ -1,0 +1,292 @@
+from flask import Blueprint, render_template, redirect,request,current_app
+from common.mysqloptor import db
+from common.reqresult import ReqResult
+import json
+import shutil
+import time
+import os
+import zipfile
+import os.path
+
+realtimealarm = Blueprint('RealtimeAlarm',__name__)
+
+'''
+    1.获取实时告警最大ID
+'''
+@realtimealarm.route('/GetCurAlarmMaxID', methods=["post"])
+def GetCurAlarmMaxID():
+    print("token",request.form.get("token"))
+    token=request.form.get("token")
+    current_app.logger.info('GetCurAlarmMaxID   token:{}'.format(token))
+
+    sql = "select max(id) as id from v_curalert"
+    maxid = db.select_db(sql)
+    req = ReqResult()
+    if len(maxid) == 0:
+        req.code = 1
+        req.msg = "获取数据失败"
+    else:
+        req.data = maxid[0]["id"]
+    return json.dumps(req.__dict__)
+
+'''
+    2.获取实时告警列表
+'''
+@realtimealarm.route('/GetCurAlarmList', methods=["post"])
+def GetCurAlarmList():
+    print("token", request.form.get("token"))
+    print("pagesize", request.form.get("pagesize"))
+    print("pagenum", request.form.get("pagenum"))
+
+    pagesize = request.form.get("pagesize")
+    pagenum = request.form.get("pagenum")
+    token = request.form.get("token")
+    req = ReqResult()
+    if pagesize == None or pagenum == None or token == None:
+        req.code = 1
+        req.msg= "参数不正确"
+        return json.dumps(req.__dict__)
+
+    current_app.logger.info('GetAlarmInfoFile   token:{},pagesize:{},pagenum:{}'.format(token,pagesize,pagenum))
+
+    sql = "select * ,CONCAT(stationname,'-',roomname) as station from v_curalert where opsts != 20 ORDER BY id desc limit {},{}".format( str((int(pagenum)-1)*int(pagesize)),str(pagesize))
+    listdata = db.select_db(sql)
+
+    json_list = []
+
+    for i in listdata:
+        i["updatetime"]=i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    #print(json_list)
+    #ret1 = json.dumps(json_list)
+    #print(ret1)
+
+
+    if len(listdata) == 0:
+        req.code = 1
+        req.msg = "获取数据失败"
+    else:
+        req.data = json_list
+
+    return json.dumps(req.__dict__)
+
+def GetAlarmInfoFromDB(alarmid):
+    sql = "select * from v_alarminfo where id={} ".format(alarmid)
+    listdata = db.select_db(sql)
+
+    json_list = []
+
+    for i in listdata:
+        i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    req = ReqResult()
+    if len(listdata) == 0:
+        req.code = 1
+        req.msg = "获取数据失败"
+    else:
+        req.data = json_list[0]
+
+        sql = "select filename from m_result where task_id = {}".format(alarmid)
+        listdataimg = db.select_db(sql)
+
+        imglist = []
+        for im in listdataimg:
+            imglist.append(im["filename"])
+        req.data["imgs"] = imglist
+    return json.dumps(req.__dict__)
+
+'''
+    3.获取告警详情
+'''
+@realtimealarm.route('/GetAlarmInfo', methods=["post"])
+def GetAlarmInfo():
+    print("token", request.form.get("token"))
+    print("id", request.form.get("id"))
+    alarmid = request.form.get("id")
+    token = request.form.get("token")
+    current_app.logger.info('GetAlarmInfo   token:{},alarmid:{}'.format(token,alarmid))
+    return GetAlarmInfoFromDB(alarmid)
+
+'''
+    4.确定告警
+'''
+@realtimealarm.route('/AlarmInfoHandler', methods=["post"])
+def AlarmInfoHandler():
+    print("token", request.form.get("token"))
+    print("id", request.form.get("id"))
+    alarmid = request.form.get("id")
+    token = request.form.get("token")
+    current_app.logger.info('AlarmInfoHandler   token:{},alarmid:{}'.format(token,alarmid))
+
+    sql = "update m_task set opsts={} where task_id={} ".format(20,alarmid)
+    db.execute_db(sql)
+
+    req = ReqResult()
+
+    return json.dumps(req.__dict__)
+
+'''
+    4.1设置告警已读状态
+'''
+@realtimealarm.route('/AlarmInfoReadHandler', methods=["post"])
+def AlarmInfoReadHandler():
+    print("token", request.form.get("token"))
+    print("id", request.form.get("id"))
+    alarmid = request.form.get("id")
+    token = request.form.get("token")
+    current_app.logger.info('AlarmInfoReadHandler   token:{},alarmid:{}'.format(token,alarmid))
+    sql = "update m_task set opsts={} where task_id={} ".format(15, alarmid)
+    db.execute_db(sql)
+
+    req = ReqResult()
+
+    return json.dumps(req.__dict__)
+
+'''
+    5.确定全部告警
+'''
+@realtimealarm.route('/AllAlarmInfoHandler', methods=["post"])
+def AllAlarmInfoHandler():
+    print("token", request.form.get("token"))
+    token=request.form.get("token")
+    current_app.logger.info('AllAlarmInfoHandler   token:{}'.format(token))
+    sql = "update m_task set opsts={} where opsts != 20 ".format(20)
+    db.execute_db(sql)
+
+    req = ReqResult()
+
+    return json.dumps(req.__dict__)
+
+
+def get_zip_file(input_path, result):
+    files = os.listdir(input_path)
+    for file in files:
+        if os.path.isdir(input_path + '/' + file):
+            get_zip_file(input_path + '/' + file, result)
+        else:
+            result.append(input_path + '/' + file)
+def zip_file_path(input_path, output_path, output_name):
+    f = zipfile.ZipFile(output_path + '/' + output_name, 'w', zipfile.ZIP_DEFLATED)
+    filelists = []
+    get_zip_file(input_path, filelists)
+    for file in filelists:
+        f.write(file)
+    # 调用了close方法才会保证完成压缩
+    f.close()
+    return output_path + r"/" + output_name
+
+'''
+    6.告警导出
+'''
+@realtimealarm.route('/GetAlarmInfoFile', methods=["post"])
+def GetAlarmInfoFile():
+    print("token", request.form.get("token"))
+    print("id", request.form.get("id"))
+    alarmid = request.form.get("id")
+    token = request.form.get("token")
+    current_app.logger.info('GetAlarmInfoFile   token:{},alarmid:{}'.format(token,alarmid))
+    strinfo = GetAlarmInfoFromDB(alarmid)
+    print("strinfo:",strinfo)
+    objinfo = json.loads(strinfo)
+    tmpdir = '{}-{}-{}'.format(alarmid,time.strftime('%Y-%m-%d-%H-%M-%S'), token)
+    tmppath = './tmpfiles/'+tmpdir
+    print("--tmppath:",tmppath)
+    os.mkdir(tmppath)
+    f = None
+    try:
+        f = open('{}/info.txt'.format(tmppath), 'w')
+        f.write(strinfo)
+    finally:
+        if f:
+            f.close()
+
+    imgcnt = 0
+    print(objinfo, type(objinfo))
+    for imgfile in objinfo["data"]["imgs"]:
+        if os.path.isfile(imgfile) :
+            shutil.copy(imgfile, tmppath+"/{}.bmp".format(imgcnt))
+            imgcnt += 1
+
+    hisvideo = objinfo["data"]["hisvideo"]
+    if os.path.isfile(hisvideo):
+        shutil.copy(hisvideo, tmppath + "/error.mp4")
+
+    zipfilea = zip_file_path(tmppath, "./tmpfiles", tmpdir+".zip")
+    req = ReqResult()
+    req.data = "./tmpfiles"+"/"+tmpdir+".zip"
+
+    shutil.rmtree(tmppath)
+
+    return json.dumps(req.__dict__)
+
+
+'''
+    8.获取变电站列表
+'''
+@realtimealarm.route('/GetStationList', methods=["post"])
+def GetStationList():
+    print("token", request.form.get("token"))
+    token=request.form.get("token")
+    current_app.logger.info('GetStationList   token:{}'.format(token))
+
+    sql = "select id, stationname as station from m_stationinfo"
+    listdata = db.select_db(sql)
+    print(listdata)
+    req = ReqResult()
+    if len(listdata) == 0:
+        req.code = 1
+        req.msg = "获取数据失败"
+    else:
+        req.data = listdata
+
+    return json.dumps(req.__dict__)
+
+'''
+    9.获取站内摄像头信息
+'''
+@realtimealarm.route('/GetStationCamList', methods=["post"])
+def GetStationCamList():
+    print("token", request.form.get("token"))
+    print("stationid", request.form.get("stationid"))
+    stationid = request.form.get("stationid")
+    token = request.form.get("token")
+    current_app.logger.info('GetStationCamList   token:{},stationid:{}'.format( token, stationid))
+
+    sql = "select bb.camera_id as id, bb.camera_name as cam from m_stationroom aa LEFT JOIN m_camera  bb on aa.id = bb.roomid where aa.stationid={}".format(stationid)
+    listdata = db.select_db(sql)
+    print(listdata)
+    req = ReqResult()
+    if len(listdata) == 0:
+        req.code = 1
+        req.msg = "获取数据失败"
+    else:
+        req.data = listdata
+
+    return json.dumps(req.__dict__)
+
+'''
+"token": "111111111111111",
+“starttime”:”2020-06-06 06:06:06”,
+“endtime”:”2020-06-06 06:10:06”,
+“stationid”：“1”，
+“camid”:”11”
+'''
+'''
+    7.手动创建检测任务
+'''
+@realtimealarm.route('/CreateDetectTask', methods=["post"])
+def CreateDetectTask():
+    req = ReqResult()
+    return json.dumps(req.__dict__)
+
+
+
+
+
+
+
+
+
+
