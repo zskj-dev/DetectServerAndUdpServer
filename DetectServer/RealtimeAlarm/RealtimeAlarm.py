@@ -387,41 +387,46 @@ def getlist(type, pagesize, pagenum):
     listdata = db.select_db(sql)
     print("--------getlist listdatalen:", len(listdata))
 
-    json_list = []
-
-    for i in listdata:
-        i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
-        json_list.append(i)
-
-    sqltotal = ""  # "select count(*) as cnt from v_errlist where opsts != 20"
-    if type == 0:
-        sqltotal = "select count(*) as cnt from v_errlist where optflag1 =0 and confirm =0 and state = 3"
-    elif type == 1:
-        sqltotal = "select count(*) as cnt from v_errlist where state != 3"
-    elif type == 2:
-        sqltotal = "select count(*) as cnt from v_errlist where optflag1 =1 and confirm =1 and state = 3 "
-    elif type == 3:
-        sqltotal = "select count(*) as cnt from v_errlist"
-    elif type == 4:
-        sqltotal = "select count(*) as cnt from v_errlist where flag=1"
-    else:
-        sqltotal = "select count(*) as cnt from v_errlist"
-
-    totaldata = db.select_db(sqltotal)
-    current_app.logger.info('getlist totaldata:{}'.format(totaldata))
-    # print(json_list)
-    # ret1 = json.dumps(json_list)
-    # print(ret1)
-
-    dateInfo = {}
-    dateInfo["datas"] = json_list
-    dateInfo["count"] = len(json_list)
-    dateInfo["total"] = totaldata[0]["cnt"]
-
     if len(listdata) == 0:
         req.code = 1
-        req.msg = "获取数据失败"
+        req.msg = "获取数据失败,listdata为空"
     else:
+        json_list = []
+
+        for i in listdata:
+            i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
+            json_list.append(i)
+
+        sqltotal = ""  # "select count(*) as cnt from v_errlist where opsts != 20"
+        if type == 0:
+            sqltotal = "select count(*) as cnt from v_errlist where optflag1 =0 and confirm =0 and state = 3"
+        elif type == 1:
+            sqltotal = "select count(*) as cnt from v_errlist where state != 3"
+        elif type == 2:
+            sqltotal = "select count(*) as cnt from v_errlist where optflag1 =1 and confirm =1 and state = 3 "
+        elif type == 3:
+            sqltotal = "select count(*) as cnt from v_errlist"
+        elif type == 4:
+            sqltotal = "select count(*) as cnt from v_errlist where flag=1"
+        else:
+            sqltotal = "select count(*) as cnt from v_errlist"
+
+        totaldata = db.select_db(sqltotal)
+        current_app.logger.info('getlist totaldata:{}'.format(totaldata))
+        # print(json_list)
+        # ret1 = json.dumps(json_list)
+        # print(ret1)
+
+        dateInfo = {}
+        dateInfo["datas"] = json_list
+        dateInfo["count"] = len(json_list)
+        dateInfo["total"] = totaldata[0]["cnt"]
+        if len(json_list) == 0:
+            req.code = 1
+            req.msg = "获取数据失败,json_list为空"
+        else:
+            req.code = 0
+            req.msg = "success"
         req.data = dateInfo
     return json.dumps(req.__dict__, ensure_ascii=False)
     # return json.dumps(req.__dict__)
