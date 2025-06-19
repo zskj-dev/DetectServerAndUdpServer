@@ -298,5 +298,7 @@ $RECYCLE.BIN/
 *.jpeg
 *.gif
 *.jpg
+*.log
+*.pyc
 
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,bazel,cmake,linux,macos,windows,jetbrains+all,visualstudiocode
