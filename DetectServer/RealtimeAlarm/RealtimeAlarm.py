@@ -360,23 +360,49 @@ def GetAllMsgFlagList():
 4. 获取所有标记的信息
 '''
 
+# errlist的字段名
+#id	nvrip	nvrport	nvruser	nvrpasswd	nvrchannel	stateval	state	taskfrom	errortype	errorimg	flag	gifname	updatetime	dvrchannel	camera_id	camera_name	roomid	roomname	stationname	meaning	optflag1	confirm
+errlist_field_names = ["id", "nvrip", "nvrport", "nvruser", "nvrpasswd", "nvrchannel", "stateval"
+            , "state", "taskfrom", "errortype", "errorimg", "flag", "gifname", "updatetime"
+            , "dvrchannel", "camera_id", "camera_name", "roomid", "roomname", "stationname" 
+            , "meaning", "optflag1", "confirm"]  # 根据你的查询修改
+# count_of_errlist 只包含count一个元素
+count_of_errlist_file_names = ["cnt"]
 
-def getlist(type, pagesize, pagenum):
+# tuple转换dict函数
+def tuple_to_dict(data, fields):
+    if not data or len(data) == 0:
+        return []
+    elif type(data[0]) is dict:
+        return data
+    elif type(data[0]) is tuple:
+        return [dict(zip(fields, record)) for record in data]
+    else:
+        print("warning:return [], unexpected type", type(data))
+        return []
+
+# 处理时间
+def format_datetime(record):
+    if "updatetime" in record and hasattr(record["updatetime"], "strftime"):
+        record["updatetime"] = record["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
+    return record
+
+def getlist(para_type, pagesize, pagenum):
     req = ReqResult()
     sql = ""
-    if type == 0:
+    if para_type == 0:
         sql = "select * from v_errlist where optflag1 =0 and confirm =0 and state = 3 ORDER BY id desc limit {},{}".format(
             str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
-    elif type == 1:
+    elif para_type == 1:
         sql = "select * from v_errlist where state != 3 ORDER BY id desc limit {},{}".format(
             str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
-    elif type == 2:
+    elif para_type == 2:
         sql = "select * from v_errlist where optflag1 =1 and confirm =1 and state = 3 ORDER BY id desc limit {},{}".format(
             str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
-    elif type == 3:
+    elif para_type == 3:
         sql = "select * from v_errlist  ORDER BY id desc limit {},{}".format(
             str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
-    elif type == 4:
+    elif para_type == 4:
         sql = "select * from v_errlist where flag=1 ORDER BY id desc limit {},{}".format(
             str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
     else:
@@ -393,20 +419,30 @@ def getlist(type, pagesize, pagenum):
     else:
         json_list = []
 
-        for i in listdata:
-            i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
+        # 经过测试在使用这个接口时“4.1获取全部终端上报信息列表”，报错信息如下：
+        # updatetime = i["updatetime"]
+        # TypeError: tuple indices must be integers or slices, not str
+        # listdata/i的类型是tuple,不能使用 i["updatetime"]
+        # 需要将tuple转换成dict
+        print("__DEBUG__:get listdata type:", type(listdata))
+
+        # 如果是tuple，需要转换成dict
+        dict_data = tuple_to_dict(listdata, errlist_field_names)
+        processed_data = [format_datetime(record) for record in dict_data]
+
+        for i in processed_data:
             json_list.append(i)
 
         sqltotal = ""  # "select count(*) as cnt from v_errlist where opsts != 20"
-        if type == 0:
+        if para_type == 0:
             sqltotal = "select count(*) as cnt from v_errlist where optflag1 =0 and confirm =0 and state = 3"
-        elif type == 1:
+        elif para_type == 1:
             sqltotal = "select count(*) as cnt from v_errlist where state != 3"
-        elif type == 2:
+        elif para_type == 2:
             sqltotal = "select count(*) as cnt from v_errlist where optflag1 =1 and confirm =1 and state = 3 "
-        elif type == 3:
+        elif para_type == 3:
             sqltotal = "select count(*) as cnt from v_errlist"
-        elif type == 4:
+        elif para_type == 4:
             sqltotal = "select count(*) as cnt from v_errlist where flag=1"
         else:
             sqltotal = "select count(*) as cnt from v_errlist"
@@ -420,7 +456,9 @@ def getlist(type, pagesize, pagenum):
         dateInfo = {}
         dateInfo["datas"] = json_list
         dateInfo["count"] = len(json_list)
-        dateInfo["total"] = totaldata[0]["cnt"]
+        # 如果是tuple，需要转换成dict
+        dict_data_of_count = tuple_to_dict(totaldata, count_of_errlist_file_names)
+        dateInfo["total"] = dict_data_of_count[0]["cnt"]
         if len(json_list) == 0:
             req.code = 1
             req.msg = "获取数据失败,json_list为空"
