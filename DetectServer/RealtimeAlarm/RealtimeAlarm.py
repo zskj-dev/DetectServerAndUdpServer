@@ -922,26 +922,28 @@ def GetAllMsgInfoFile(msgtype):
 @realtimealarm.route('/AddStationInfo', methods=["post"])
 def AddStationInfo():
     stationname = request.form.get("stationname")
-    type = request.form.get("type")
+    station_type = request.form.get("type")
     position = request.form.get("position")
     req = ReqResult()
-    if type == None or position == None or stationname == None:
+    if station_type == None or position == None or stationname == None:
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
-    current_app.logger.info('AddStationInfo   stationname:{},type:{},position:{}'.format(stationname, type, position))
+    current_app.logger.info('AddStationInfo   stationname:{},station_type:{},position:{}'.format(stationname, station_type, position))
 
     select_maxid_sql = 'select max(id) as maxid from m_stationinfo'
     select_maxid_result = db.select_db(select_maxid_sql)
     id = 0
-    if select_maxid_result[0]['maxid'] is None:
+    print("__DEBUG__:----select_maxid_result:", select_maxid_result)
+    dict_data_of_maxid= tuple_to_dict(select_maxid_result, ["maxid"])
+    if dict_data_of_maxid[0]["maxid"] is None:
         id = 1
     else:
-        id = int(select_maxid_result[0]['maxid']) + 1
+        id = int(dict_data_of_maxid[0]["maxid"]) + 1
     insert_dic = {
         'id': id,
         'stationname': stationname,
-        'type': type,
+        'type': station_type,
         'position': position,
         'optchargeid': 0
     }
