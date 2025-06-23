@@ -48,9 +48,14 @@ class MysqlDB(object):
         # data = self.cur.fetchall()
         # return data
         with self.pool.connection() as conn:
-            with conn.cursor() as cursor:
+            with conn.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
+                # 打印驱动和游标类型
+                # print(f"驱动模块: {conn.__class__.__module__}")
+                # print(f"游标类型: {cursor.__class__.__name__}")
                 cursor.execute(sql)
-                return cursor.fetchall()
+                result = cursor.fetchall()
+                assert isinstance(result, list), "select_db查询结果不是list类型"
+                return result
 
     def execute_db(self, sql):
         with self.pool.connection() as conn:
