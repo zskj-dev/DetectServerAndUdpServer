@@ -352,10 +352,14 @@ def VisitationPlanWorker(id,mqDetectTask):
             'nvrchannel': nvrchannel,
             'errorimg': "",
             'errortype': 0,
+            "errfrom": 0,   #新增字段，默认值
             'revint': 0,
             'revstr': "0",
             'state': 0,
-            'flag': 0
+            'flag': 0,
+            "gifname": "",  #新增字段，默认值
+            "optflag1": 0,  #新增字段，默认值
+            "confirm" : 0   #新增字段，默认值
         }
         db.insertData(TableName, insert_dic)
         print("qDetectTask.put")
