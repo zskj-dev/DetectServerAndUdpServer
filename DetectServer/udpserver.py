@@ -41,12 +41,12 @@ def getModelFileNameAndCurErrLevel():
     sqltotal = "select a.filename,a.id from m_model a where a.flag = 1"
     totaldata = db.select_db(sqltotal)
     #print("getSystemConfig:", totaldata[0]["filename"])
-    systemsetting["filename"] = totaldata[0]["filename"]
-    systemsetting["fileid"] = totaldata[0]["id"]
+    systemsetting["filename"] = totaldata[0].get("filename")  # 避免 KeyError
+    systemsetting["fileid"] = totaldata[0].get("id")
     sqltotal = "select curerrlevel from m_systemsetting"
     totaldata = db.select_db(sqltotal)
     #print("getSystemConfig:",totaldata[0]["curerrlevel"])
-    systemsetting["curerrlevel"] = totaldata[0]["curerrlevel"]
+    systemsetting["curerrlevel"] = totaldata[0].get("curerrlevel")
     return systemsetting
 
 
@@ -298,7 +298,9 @@ def udp_server(mqDetectTask,host='0.0.0.0', port=8009):
                 'revstr': "0",
                 'state': 0,
                 'flag': 0,
-                'gifname':pd[6]
+                'gifname':pd[6],
+                'optflag': 0,   # 新增字段，默认为0
+                'confirm': 0    # 新增字段，默认为0
             }
             db.insertData(TableName, insert_dic)
             # devid = pd[0]
@@ -436,7 +438,9 @@ def VisitationPlanThread(mqDetectTask):
                     VisitationPlanWorker(id, mqDetectTask)
                 #判断间隔时间是否已到
                 now = datetime.now()
-                time_difference = now - predatetime1
+                # 将predatetime1类型从string改成datetime格式,修改报错：TypeError: unsupported operand type(s) for -: 'datetime.datetime' and 'str'
+                predatetime_obj = datetime.strptime(predatetime1, "%Y-%m-%d %H:%M:%S")
+                time_difference = now - predatetime_obj
                 sec_difference = time_difference.total_seconds()
                 totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
                 if sec_difference > totalsec:
