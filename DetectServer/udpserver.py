@@ -1,6 +1,9 @@
 # udp_server.py
+import json
 from multiprocessing import Process, Queue,Lock
 import socket
+
+from hk.getimgfromDVRBySDK import capture_camera_image_at_preset
 from common.mysqloptor import db
 import time
 import datetime,os
@@ -11,6 +14,7 @@ from ultralytics import YOLO
 import cv2
 from datetime import datetime, timedelta
 from PIL import Image,ImageDraw
+import uuid
 
 qDetectTask = Queue()
 
@@ -49,6 +53,10 @@ def getModelFileNameAndCurErrLevel():
     systemsetting["curerrlevel"] = totaldata[0].get("curerrlevel")
     return systemsetting
 
+'''生成唯一码'''
+def generate_unique_code():
+    unique_id = uuid.uuid4()
+    return str(unique_id)
 
 def getModelFileTypeErrLevel(modelid, syslevel):
     li = {}
@@ -88,8 +96,258 @@ def is_file_readable_with_content(file_path):
     print("file_size:",file_size)
         # 如果通过了所有检查，则文件是可读的且不为空
     return True
-def CheckNvrChannelStateThread(mqDetectTask):
-    print("CheckNvrChannelStateThread start")
+
+
+# 更新对应巡视任务的上一次执行时间和当前任务的任务唯一码
+def updateTaskPlanPreTimeAndMagicCode(planid,mgcode):
+    print("updateTaskPlanPreTimeAndMagicCode:", planid,mgcode)
+    #nowTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sqlstr = "update m_visitationplan set  curmagicserial='{}',curprogress=0,  where id ={}".format(mgcode, planid)
+    print("updateTaskPlanPreTimeAndMagicCode:",sqlstr)
+    db.execute_db(sqlstr)
+
+# 更新巡视计划的进度百分比
+def updateTaskPlanState(planid, val):
+    sqlstr = "update m_visitationplaninfo set curprogress={}  where id ={}".format(val, planid)
+    db.execute_db(sqlstr)
+
+#获取对应表的下一个ID号，用于insert
+def getTableNextID(TableName):
+    select_maxid_sql = 'select max(id) as maxid from {}'.format(TableName)
+    select_maxid_result = db.select_db(select_maxid_sql)
+    id = 0
+    if select_maxid_result[0]['maxid'] is None:
+        id = 1
+    else:
+        id = int(select_maxid_result[0]['maxid']) + 1
+    return id
+
+#巡视任务子项 执行函数
+def sendOptInfoToDev(optipaddr, yiqiid,port=8081, timeout=30):
+    """
+    通过TCP发送命令并根据响应或超时判断结果
+
+    参数:
+        host (str): 服务器IP地址
+        port (int): 服务器端口
+        command (str): 要发送的命令
+        timeout (int): 超时时间（秒），默认10秒
+
+    返回:
+        bool: True表示成功，False表示失败
+    """
+    print("sendOptInfoToDev:", optipaddr, yiqiid, port)
+    try:
+        # 创建TCP套接字
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # 设置超时时间
+            s.settimeout(timeout)
+            # 连接服务器
+            # 连接到服务器
+            print(f"正在连接到:{optipaddr}:{port}...")
+            s.connect((optipaddr, port))
+            print(f"已成功连接到 {optipaddr}:{port}")
+
+            # 发送消息（需要先将字符串编码为字节）
+            message_bytes = str(yiqiid).encode('utf-8')
+            s.sendall(message_bytes)
+            print(f"已发送消息: {str(yiqiid)}")
+            # 发送命令
+            # 记录开始时间
+            start_time = time.time()
+            try:
+                # 接收响应
+                response = s.recv(1024).decode().strip()
+                print(f"收到响应: {response}")
+
+                # 根据响应内容判断结果
+                if response == "1":
+                    return True
+                else:  # 包括"0"和其他情况
+                    return False
+            except socket.timeout:
+                # 超时处理
+                elapsed_time = time.time() - start_time
+                print(f"超时({elapsed_time:.2f}秒): 未收到响应，视为成功")
+                return True
+
+    except Exception as e:
+        print(f"通信异常: {e}")
+        return False
+
+
+def getNVRInfo(imgid):
+    sqlstr = "select * from m_camera aa LEFT JOIN m_dvr bb on aa.dvr_id=bb.dvr_id where  camera_id = {}".format(imgid)
+    print("getNVRInfo sql:", sqlstr)
+    totaldata = db.select_db(sqlstr)
+    print(totaldata)
+    if totaldata is not None and len(totaldata) > 0:
+        return totaldata[0]
+    return None
+
+
+def InsertSubPlanInfoToHis(taskinfoid, mgcode, imgfilenameonly):
+    TableName = "m_visitationplaninfohistory"
+    select_maxid_sql = 'select max(id) as maxid from {}'.format(TableName)
+    select_maxid_result = db.select_db(select_maxid_sql)
+    id = 0
+    if select_maxid_result[0]['maxid'] is None:
+        id = 1
+    else:
+        id = int(select_maxid_result[0]['maxid']) + 1
+
+    insert_dic = {
+        'id': id,
+        'taskinfoid': taskinfoid,
+        'imgfilename': os.path.basename(imgfilenameonly),
+        'detectresult': 0,
+        'errtype': 0,
+        'errid': 0,
+        'errinfo': "",
+        'taskmagicserial': mgcode,
+    }
+    db.insertData(TableName, insert_dic)
+    return id
+
+
+def UpdateSubPlanCheckResultByHisid(hisid, errinfo, errid, errtype, detectresult):
+    sqlstr = '''
+    UPDATE m_visitationplaninfohistory
+        SET 
+        errinfo = '{}',
+        errid = {},
+        errtype = {},
+        detectresult = {}
+        WHERE 
+        id = {}
+    '''.format(errinfo,errid, errtype, detectresult, hisid )
+    db.execute_db(sqlstr)
+def PlanSubItemAction(iitem, mgcode):
+    if iitem["id"] is None:
+        return
+
+    if iitem["ctlopt"] is None:
+        return
+
+    status_data = {
+        "OptJiQiRen": "",
+        "DownLoadImage": "",
+        "DetectImage": "",
+    }
+
+    # 检测
+    errstr = ""
+    errid = 0
+    errtype = 0
+    resultstr = 0
+
+    #增加检测记录
+    imgfilenameonly = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runs", "images",
+                                   generate_unique_code() + ".jpg")
+    print("PlanSubItemAction:", iitem["id"], mgcode, iitem,imgfilenameonly)
+    hisid = InsertSubPlanInfoToHis(iitem["id"] ,mgcode, imgfilenameonly)
+    print("will send opt msg:",  iitem["ctlopt"])
+    #需要控制
+    if int(iitem["ctlopt"]) == 1:
+        print("start send opt msg:", iitem["ctlopt"])
+        isok = sendOptInfoToDev(iitem["optipaddr"], iitem["yiqiid"])
+        print("send opt over msg:", isok)
+        if isok == False:
+            status_data["OptJiQiRen"] = "send command info to JiQiRen failed!"
+            errid = 10002
+            resultstr = 1
+            errstr = json.dumps(status_data,ensure_ascii=False)
+            UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+            return
+
+        imgid = iitem["camid"]
+        watchpoint = iitem["watchpoint"]
+
+        NVRInfo = getNVRInfo(imgid)
+        if NVRInfo is None:
+            status_data["DownLoadImage"]  = "NVR Info empty"
+            errid = 10001
+            resultstr = 2
+            errstr = json.dumps(status_data, ensure_ascii=False)
+            UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+            return
+
+        success = capture_camera_image_at_preset(
+            NVRInfo["ip"],
+            NVRInfo["port"],
+            NVRInfo["user"],
+            NVRInfo["pwd"],
+            NVRInfo["channel"],  # 通道号
+            watchpoint,  # 预置点编号
+            imgfilenameonly,  # 输出文件名
+            5  # 等待时间（秒）
+        )
+        if success == False:
+            status_data["DownLoadImage"] = "Download Image Failed"
+        else:
+            status_data["DownLoadImage"] = "Download Image Successed!"
+        resultstr = 3
+        errstr = json.dumps(status_data, ensure_ascii=False)
+        UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+
+        #开始检测，并记录结果
+        #if iitem["ctlopt"] == 0: #异常缺陷检测
+        #
+        #    UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+        #else:#表计读数
+        #
+        #    UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+        #status_data["DetectImage"] = "Result"
+
+def InsertPlanInfoToHis(planid, mgcode):
+    TableName = "m_visitationplanhistory"
+    select_maxid_sql = 'select max(id) as maxid from {}'.format(TableName)
+    select_maxid_result = db.select_db(select_maxid_sql)
+    id = 0
+    if select_maxid_result[0]['maxid'] is None:
+        id = 1
+    else:
+        id = int(select_maxid_result[0]['maxid']) + 1
+
+    insert_dic = {
+        'id': id,
+        'taskplanid': planid,
+        'taskstarttime': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'taskendtime': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'taskprogress': 0,
+        'taskmagicserial': mgcode,
+        'errcount': 0,
+    }
+    db.insertData(TableName, insert_dic)
+    return id
+
+def UpdatePlanInfoToHis(planid, mgcode, taskprogress):
+    print("UpdatePlanInfoToHis:", mgcode, taskprogress)
+    sqlstr = '''
+    UPDATE m_visitationplanhistory
+        SET 
+        taskendtime = '{}',
+        taskprogress = {} 
+        WHERE 
+        taskmagicserial = '{}'
+    '''.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),taskprogress, mgcode )
+    #print("UpdatePlanInfoToHis:", sqlstr)
+    db.execute_db(sqlstr)
+
+def UpdatePlanInfoToPlan(planid, val):
+    print("UpdatePlanInfoToPlan:", val)
+    sqlstr = '''
+    UPDATE m_visitationplan
+        SET 
+        predatetime = '{}',
+        curprogress = {} 
+        WHERE 
+        id = {}
+    '''.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),val, planid )
+    db.execute_db(sqlstr)
+
+def VisitationPlanWorkerThread(mqDetectTask):
+    print("VisitationPlanWorkerThread start")
     systemsetting = getModelFileNameAndCurErrLevel()
     systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"], systemsetting["curerrlevel"])
     type_counts = {str(k): 0 for k in systemsetting["info"].keys()}
@@ -98,171 +356,31 @@ def CheckNvrChannelStateThread(mqDetectTask):
     while 1:
         try:
             t = mqDetectTask.get(timeout=1)
-            print("task  start")
-            id = t[0]
-            devid =t[1]
-            nvrip=t[2]
-            nvrport=t[3]
-            nvruser=t[4]
-            nvrpasswd=t[5]
-            nvrchannel=t[6]
+            print("VisitationPlanWorkerThread task  start: ", t)
+            planid = t[0]
+            # 获取计划子项信息
+            subitemsql = "select * from m_visitationplaninfo where taskplanid = {}".format(planid)
+            totaldata = db.select_db(subitemsql)
+            print("VisitationPlanWorkerThread subitem:", totaldata)
+            mgcode = generate_unique_code()
+            if totaldata is None or len(totaldata) == 0:
+                updateTaskPlanPreTimeAndMagicCode(planid,mgcode)
+                updateTaskPlanState(planid, 100)
+                continue;
 
-            print(nvrip, nvrport, nvruser, nvrpasswd, nvrchannel)
-            exepath = b"C:\\NVRDownloadImg\\NVRDownloadImg.exe"
-            script_path = os.path.abspath(__file__)
-            script_dir = os.path.dirname(script_path)
-            random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-            imgpath = os.path.join(script_dir,"runs", "images", devid+random_str+str(nvrchannel)+".jpeg")
-            arguments = [nvrip,str(nvrport), nvruser, nvrpasswd, str(nvrchannel) , imgpath]
-            result = subprocess.run([exepath]+arguments , capture_output=True, text=True)
-            print("down over",result)
+            updateTaskPlanPreTimeAndMagicCode(planid, mgcode)
+            print("InsertPlanInfoToHis")
+            InsertPlanInfoToHis(planid,mgcode)
 
-            """
-            test alarm !!!!!!!!!!!!
-            """
-            #imgorgfilename = "1.jpg"
-            #imgpath = os.path.join(script_dir, "images", imgorgfilename)
+            loop = 0
+            for iitem in totaldata:
+                PlanSubItemAction(iitem, mgcode)
+                loop = loop + 1
+                UpdatePlanInfoToPlan(planid, (loop/len(totaldata))*100)
 
-            time.sleep(3)
-            waitloop = 0
-            while 1:
-                if not is_file_readable_with_content(imgpath):
-                    time.sleep(1)
-                else:
-                    break
-                waitloop = waitloop + 1
-                if waitloop > 10:
-                    break
-            time.sleep(2)
-            state = 1
-            if os.path.isfile(imgpath):
-                print(imgpath," is found！, start detect!",waitloop)
-                t0 = time.time()
-                results = None
-                img = cv2.imread(imgpath)
-                rgb_img = img.convert("RGB")
-                results = model.predict(source=img, save=False)  # save predictions as labels
-                t1 = time.time()
-                print('Done. (%.3fs)' % (t1 - t0))
-                result = results[0]
-                print("Detect cnt:", len(result.boxes.cls))
-                for result in results:
-                    boxes = result.boxes.data.cpu().numpy()
-                    for box in boxes:
-                        x1, y1, x2, y2, conf, cls = box
-                        if systemsetting["info"].get(str(int(cls)), 0) == 1:
-                            # 获取类别名称（根据你的模型类别定义）
-                            class_name = model.names[int(cls)]
-                            # class_name = systemsetting["info"]
-                            # 在图像上绘制边界框和类别名称
-                            draw = ImageDraw.Draw(rgb_img)
-                            color = localcolors[int(cls) % len(localcolors)]
-                            color = color_mapping[color]
-                            draw.rectangle([x1, y1, x2, y2], outline=color, width=2)
-                            # draw.rectangle([x1, y1, x2, y2],  width=2)
-                            draw.text((x1, y1 - 10), f"{class_name} {conf:.2f}", fill=color)
-                            # draw.text((x1, y1 - 10), f"{class_name} {conf:.2f}")
-                            # 增加对应类别的计数
-                            type_counts[str(int(cls))] += 1
-                # if len(result.boxes.cls) != 0:
-                #     state = 2
-                #     boxes = result.boxes
-                #     conflist = boxes.conf.tolist()
-                #     clslist = boxes.cls.tolist()
-                #     xyxylist = boxes.xyxy.tolist()
-                #     strlist = []
-                #     isneedAlarm = False
-                #     for itm in clslist:
-                #         alarmtype = checkErrorTypeAlarm(int(itm))
-                #         print(itm, alarmtype)
-                #         if (alarmtype > 0):
-                #             isneedAlarm = True
-                #             break;
-                #     if isneedAlarm== True:
-                #         state = 3
-                #
-                #     for xyxyitem in xyxylist:
-                #         # xyxyitem = xyxylist[i]
-                #         cv2.rectangle(img, (int(xyxyitem[0]), int(xyxyitem[1])), (int(xyxyitem[2]), int(xyxyitem[3])), (0, 0,255), 2)
-                #     #output_path = os.path.join(imgpath)
-                #     cv2.imwrite(imgpath, img)
-                rgb_img.save(imgpath)
-            else:
-                print("down failed！")
-                state = 4
-            sql = "update m_errorinfo set errorimg='{}',state={} where id={}".format(devid+random_str+str(nvrchannel)+".jpeg",state,id)
-            print("----AlarmInfoHandler sql:",sql)
-            db.execute_db(sql)
-            print("----AlarmInfoHandler sql over!")
+            UpdatePlanInfoToHis(planid,mgcode,100)
         except Exception as e:
-            try:
-                if len(str(e)):
-                    sql = "update m_errorinfo set errorimg='{}',state={} where id={}".format(
-                        devid + random_str + str(nvrchannel) + ".jpeg", 4, id)
-                    db.execute_db(sql)
-                    print(f"发生了一个错误: {e}")
-            except TypeError:
-                pass
             pass
-
-"""
-直接启动线程检测
-
-def CheckNvrChannelState(id, devid, nvrip, nvrport, nvruser, nvrpasswd, nvrchannel):
-    print(nvrip, nvrport, nvruser, nvrpasswd, nvrchannel)
-    exepath = b"C:\\NVRDownloadImg\\NVRDownloadImg.exe"
-    script_path = os.path.abspath(__file__)
-    script_dir = os.path.dirname(script_path)
-    random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-
-    imgorgfilename=devid+random_str+str(nvrchannel)+".jpeg"
-    imgpath = os.path.join(script_dir, "images", imgorgfilename)
-    arguments = [nvrip,str(nvrport), nvruser, nvrpasswd, str(nvrchannel) , imgpath]
-    result = subprocess.run([exepath]+arguments , capture_output=True, text=True)
-    print("down over")
-
-    imgorgfilename = "1.jpg"
-    imgpath = os.path.join(script_dir, "images", imgorgfilename)
-
-    waitloop = 0
-    while 1:
-        if not os.path.isfile(imgpath):
-            time.sleep(1)
-        else:
-            waitloop = waitloop + 1
-        if waitloop > 3:
-            break
-    time.sleep(1)
-    state = 1
-    if os.path.isfile(imgpath):
-        print(imgpath," is found！, start detect!")
-        model = YOLO("../huobest.pt")
-        t0 = time.time()
-        results = model.predict(source=imgpath, save=False)  # save predictions as labels
-        t1 = time.time()
-        print('Done. (%.3fs)' % (t1 - t0))
-        result = results[0]
-        print("Detect cnt:", len(result.boxes.cls))
-        if len(result.boxes.cls) != 0:
-            state = 2
-            boxes = result.boxes
-            conflist = boxes.conf.tolist()
-            clslist = boxes.cls.tolist()
-            xyxylist = boxes.xyxy.tolist()
-            strlist = []
-            img = cv2.imread(imgpath)
-            for xyxyitem in xyxylist:
-                # xyxyitem = xyxylist[i]
-                cv2.rectangle(img, (int(xyxyitem[0]), int(xyxyitem[1])), (int(xyxyitem[2]), int(xyxyitem[3])), (0, 0,255), 2)
-            #output_path = os.path.join(imgpath)
-            cv2.imwrite(imgpath, img)
-    else:
-        print("down failed！")
-    sql = "update m_errorinfo set errorimg='{}',state={} where id={}".format(devid+random_str+str(nvrchannel)+".jpeg",state,id)
-    print("----AlarmInfoHandler sql:",sql)
-    db.execute_db(sql)
-    print("----AlarmInfoHandler sql over!")
-"""
 
 def udp_server(mqDetectTask,host='0.0.0.0', port=8009):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -299,8 +417,8 @@ def udp_server(mqDetectTask,host='0.0.0.0', port=8009):
                 'state': 0,
                 'flag': 0,
                 'gifname':pd[6],
-                'optflag': 0,   # 新增字段，默认为0
-                'confirm': 0    # 新增字段，默认为0
+                'optflag1':0,   # 新增字段，默认为0
+                'confirm':0     # 新增字段，默认为0
             }
             db.insertData(TableName, insert_dic)
             # devid = pd[0]
@@ -320,50 +438,7 @@ def compare_time_parts_with_tolerance(time_a, time_b, tolerance=2):
     diff = abs(time_a.second - time_b.second)
     return diff <= tolerance
 def VisitationPlanWorker(id,mqDetectTask):
-    print("----------------VisitationPlanWorker--------------------")
-    sqltotal = "select * from v_dvrcamlist"
-    TableName = "m_errorinfo"
-    totaldata = db.select_db(sqltotal)
-    for item in totaldata:
-        nvrip = item["ip"]
-        nvrport = item["port"]
-        nvruser = item["user"]
-        nvrpwd = item["pwd"]
-        nvrchannel = item["channel"]
-        if nvrip == None or nvrport == None or \
-                nvruser == None or nvrpwd == None or nvrchannel == None:
-            continue
-        select_maxid_sql = 'select max(id) as maxid from {}'.format(TableName)
-        select_maxid_result = db.select_db(select_maxid_sql)
-        id = 0
-        if select_maxid_result[0]['maxid'] is None:
-            id = 1
-        else:
-            id = int(select_maxid_result[0]['maxid']) + 1
-        nowTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        insert_dic = {
-            'id': id,
-            'devid': "",
-            'errdatetime': nowTime,
-            'nvrip': nvrip,
-            'nvrport': int(nvrport),
-            'nvruser': nvruser,
-            'nvrpasswd': nvrpwd,
-            'nvrchannel': nvrchannel,
-            'errorimg': "",
-            'errortype': 0,
-            "errfrom": 0,   #新增字段，默认值
-            'revint': 0,
-            'revstr': "0",
-            'state': 0,
-            'flag': 0,
-            "gifname": "",  #新增字段，默认值
-            "optflag1": 0,  #新增字段，默认值
-            "confirm" : 0   #新增字段，默认值
-        }
-        db.insertData(TableName, insert_dic)
-        print("qDetectTask.put")
-        mqDetectTask.put([id, "", nvrip, int(nvrport), nvruser, nvrpwd, nvrchannel])
+    mqDetectTask.put([id])
 
 
 def is_within_one_minute(target_time_str):
@@ -391,13 +466,24 @@ def is_within_one_minute(target_time_str):
     # 判断差值是否小于等于1分钟
     return time_difference <= timedelta(minutes=1)
 
+def VisitationPlanAction(mqDetectTask):
+    while True:
+        try:
+            t = mqDetectTask.get(timeout=3)
+            print("VisitationPlanAction:",t)
+            if (t[0] == "exit"):
+                print("task %d: exit")
+                os._exit(0)
+
+        except:
+            pass
 
 '''
 time_difference = future_time - now
 minutes_difference = time_difference.total_seconds()
 '''
-#（0：周期，1：定时单次，2：定时循环,3:立即执行）
-#状态： 0：新建  1：正在进行  2：检测完成
+#taskplantype（0：间隔周期，1：间隔定时单次，2：每天定时循环,3:立即执行）
+#taskplanstate 状态： 0：未使能  1：使能  2：检测中
 #taskplanclass： 0：巡视任务   1：检测任务
 def VisitationPlanThread(mqDetectTask):
     print("--VisitationPlan Thread Start!--")
@@ -422,37 +508,51 @@ def VisitationPlanThread(mqDetectTask):
             predatetime1 = None
             if predatetime is not None:
                 predatetime1 = predatetime.strftime('%Y-%m-%d %H:%M:%S')
+            createtime = totaldata[index]["createtime"].strftime('%Y-%m-%d %H:%M:%S')
 
             #不使能检测或者正在检测中和巡视任务，则返回
-            if taskplanstate == 0 or taskplanstate == 1  or taskplanclass == 0:
+            if taskplanstate == 0 or taskplanstate == 2  or taskplanclass == 0:
                 time.sleep(10)
                 continue
-           #如果是立即执行或者时定时单次循环任务，则查看状态为已完成 2 ，则不执行
-            if taskplanstate == 2 and taskplantype == 1:
-                time.sleep(10)
-                continue
-                #如果是立即执行的，
-            if taskplanstate == 2 and taskplantype == 3:
-                time.sleep(10)
-                continue
-            #周期
-            if taskplantype == 0:
-                #第一次
-                if predatetime1 is None:
-                    VisitationPlanWorker(id, mqDetectTask)
-                #判断间隔时间是否已到
+            #--------- 周期任务 start----------
+            if taskplantype == 0:  # 周期任务
+                biTime = None
+                if predatetime1 is None: #第一次执行，则用当前时间与创建时间比较
+                    createtime_obj = datetime.strptime(createtime, '%Y-%m-%d %H:%M:%S')
+                else:
+                    biTime = datetime.strptime(predatetime1, '%Y-%m-%d %H:%M:%S')
+                    #判断间隔时间是否已到
                 now = datetime.now()
-                # 将predatetime1类型从string改成datetime格式,修改报错：TypeError: unsupported operand type(s) for -: 'datetime.datetime' and 'str'
-                predatetime_obj = datetime.strptime(predatetime1, "%Y-%m-%d %H:%M:%S")
-                time_difference = now - predatetime_obj
+                time_difference = now - biTime
                 sec_difference = time_difference.total_seconds()
                 totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
                 if sec_difference > totalsec:
                     VisitationPlanWorker(id,mqDetectTask)
+            # --------- 周期任务 end----------
 
-            elif taskplantype == 1 or taskplantype == 2:  #定时每天
+            # --------- 单次执行 start----------
+            if taskplantype == 1:
+                if predatetime1 is None: #如果不为空，则执行过 就不在执行
+                    createtime_obj = datetime.strptime(createtime, '%Y-%m-%d %H:%M:%S')
+                    now = datetime.now()
+                    time_difference = now - createtime_obj
+                    sec_difference = time_difference.total_seconds()
+                    totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
+                    if sec_difference > totalsec:
+                        VisitationPlanWorker(id, mqDetectTask)
+            # --------- 单次执行 end----------
+
+            # --------- 每天定时循环 start----------
+            if taskplantype == 2:
                 if is_within_one_minute( taskpanh+":"+taskplanf+":"+taskplanm) is True:
                     VisitationPlanWorker(id, mqDetectTask)
+            # --------- 每天定时循环 end----------
+
+            # --------- 立即执行 start----------
+            if taskplantype == 3:
+                if predatetime1 is None:  # 如果不为空，则执行过 就不在执行
+                    VisitationPlanWorker(id, mqDetectTask)
+            # --------- 立即执行 end----------
 
         time.sleep(61)
 
@@ -460,8 +560,11 @@ if __name__ == "__main__":
     p = Process(target=udp_server, args=(qDetectTask,))
     p.start()
     #pd = Process(target=CheckNvrChannelState, args=(id, pd[0], nvrip, nvrport, nvruser, nvrpasswd, nvrchannel))
-    pd = Process(target=CheckNvrChannelStateThread, args=(qDetectTask,))
+    pd = Process(target=VisitationPlanWorkerThread, args=(qDetectTask,))
     pd.start()
 
     pdplan = Process(target=VisitationPlanThread, args=(qDetectTask,))
     pdplan.start()
+
+    # pdplana = Process(target=VisitationPlanAction, args=(qDetectTask,))
+    # pdplana.start()

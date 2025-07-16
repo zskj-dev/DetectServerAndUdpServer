@@ -103,7 +103,9 @@ def download_image(filename):
     if os.path.exists(file_path):
         # 使用send_file函数返回文件，作为下载响应
         # as_attachment=True 告诉浏览器这是一个应该被下载的文件
-        return send_file(file_path, as_attachment=False)
+        # ceshi
+        print("我是测试gif")
+        return send_file(file_path, as_attachment=True)
     else:
         # 如果文件不存在，返回404错误
         return "File not found", 404
@@ -217,8 +219,8 @@ def GetCurMsgMaxID():
         req.code = 1
         req.msg = "获取数据失败"
     else:
-        #req.data = maxid[0]["id"]
-        req.data = maxid[0][0]
+        req.data = maxid[0]["id"]
+        #req.data = maxid[0][0]
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
@@ -240,8 +242,8 @@ def GetCurAlarmMaxID():
         req.code = 1
         req.msg = "获取数据失败"
     else:
-        #req.data = maxid[0]["id"]
-        req.data = maxid[0][0]
+        req.data = maxid[0]["id"]
+        #req.data = maxid[0][0]
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
@@ -360,32 +362,6 @@ def GetAllMsgFlagList():
 4. 获取所有标记的信息
 '''
 
-# errlist的字段名
-#id	nvrip	nvrport	nvruser	nvrpasswd	nvrchannel	stateval	state	taskfrom	errortype	errorimg	flag	gifname	updatetime	dvrchannel	camera_id	camera_name	roomid	roomname	stationname	meaning	optflag1	confirm
-errlist_field_names = ["id", "nvrip", "nvrport", "nvruser", "nvrpasswd", "nvrchannel", "stateval"
-            , "state", "taskfrom", "errortype", "errorimg", "flag", "gifname", "updatetime"
-            , "dvrchannel", "camera_id", "camera_name", "roomid", "roomname", "stationname" 
-            , "meaning", "optflag1", "confirm"]  # 根据你的查询修改
-# count_of_errlist 只包含count一个元素
-count_of_errlist_file_names = ["cnt"]
-
-# tuple转换dict函数
-def tuple_to_dict(data, fields):
-    if not data or len(data) == 0:
-        return []
-    elif type(data[0]) is dict:
-        return data
-    elif type(data[0]) is tuple:
-        return [dict(zip(fields, record)) for record in data]
-    else:
-        print("warning:return [], unexpected type", type(data))
-        return []
-
-# 处理时间
-def format_datetime(record):
-    if "updatetime" in record and hasattr(record["updatetime"], "strftime"):
-        record["updatetime"] = record["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
-    return record
 
 def getlist(para_type, pagesize, pagenum):
     req = ReqResult()
@@ -413,58 +389,42 @@ def getlist(para_type, pagesize, pagenum):
     listdata = db.select_db(sql)
     print("--------getlist listdatalen:", len(listdata))
 
-    if len(listdata) == 0:
-        req.code = 1
-        req.msg = "获取数据失败,listdata为空"
+    json_list = []
+
+    for i in listdata:
+        i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    sqltotal = ""  # "select count(*) as cnt from v_errlist where opsts != 20"
+    if para_type == 0:
+        sqltotal = "select count(*) as cnt from v_errlist where optflag1 =0 and confirm =0 and state = 3"
+    elif para_type == 1:
+        sqltotal = "select count(*) as cnt from v_errlist where state != 3"
+    elif para_type == 2:
+        sqltotal = "select count(*) as cnt from v_errlist where optflag1 =1 and confirm =1 and state = 3 "
+    elif para_type == 3:
+        sqltotal = "select count(*) as cnt from v_errlist"
+    elif para_type == 4:
+        sqltotal = "select count(*) as cnt from v_errlist where flag=1"
     else:
-        json_list = []
+        sqltotal = "select count(*) as cnt from v_errlist"
 
-        # 经过测试在使用这个接口时“4.1获取全部终端上报信息列表”，报错信息如下：
-        # updatetime = i["updatetime"]
-        # TypeError: tuple indices must be integers or slices, not str
-        # listdata/i的类型是tuple,不能使用 i["updatetime"]
-        # 需要将tuple转换成dict
-        print("__DEBUG__:get listdata type:", type(listdata))
+    totaldata = db.select_db(sqltotal)
+    current_app.logger.info('getlist totaldata:{}'.format(totaldata))
+    # print(json_list)
+    # ret1 = json.dumps(json_list)
+    # print(ret1)
 
-        # 如果是tuple，需要转换成dict
-        dict_data = tuple_to_dict(listdata, errlist_field_names)
-        processed_data = [format_datetime(record) for record in dict_data]
-
-        for i in processed_data:
-            json_list.append(i)
-
-        sqltotal = ""  # "select count(*) as cnt from v_errlist where opsts != 20"
-        if para_type == 0:
-            sqltotal = "select count(*) as cnt from v_errlist where optflag1 =0 and confirm =0 and state = 3"
-        elif para_type == 1:
-            sqltotal = "select count(*) as cnt from v_errlist where state != 3"
-        elif para_type == 2:
-            sqltotal = "select count(*) as cnt from v_errlist where optflag1 =1 and confirm =1 and state = 3 "
-        elif para_type == 3:
-            sqltotal = "select count(*) as cnt from v_errlist"
-        elif para_type == 4:
-            sqltotal = "select count(*) as cnt from v_errlist where flag=1"
-        else:
-            sqltotal = "select count(*) as cnt from v_errlist"
-
-        totaldata = db.select_db(sqltotal)
-        current_app.logger.info('getlist totaldata:{}'.format(totaldata))
-        # print(json_list)
-        # ret1 = json.dumps(json_list)
-        # print(ret1)
-
-        dateInfo = {}
-        dateInfo["datas"] = json_list
-        dateInfo["count"] = len(json_list)
-        # 如果是tuple，需要转换成dict
-        dict_data_of_count = tuple_to_dict(totaldata, count_of_errlist_file_names)
-        dateInfo["total"] = dict_data_of_count[0]["cnt"]
-        if len(json_list) == 0:
-            req.code = 1
-            req.msg = "获取数据失败,json_list为空"
-        else:
-            req.code = 0
-            req.msg = "success"
+    dateInfo = {}
+    dateInfo["datas"] = json_list
+    dateInfo["count"] = len(json_list)
+    dateInfo["total"] = totaldata[0]["cnt"]
+    #req.data = dateInfo
+    #if len(listdata) == 0:
+    if listdata is None:
+        req.code = 1
+        req.msg = "获取数据失败"
+    else:
         req.data = dateInfo
     return json.dumps(req.__dict__, ensure_ascii=False)
     # return json.dumps(req.__dict__)
@@ -929,17 +889,15 @@ def AddStationInfo():
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
-    current_app.logger.info('AddStationInfo   stationname:{},station_type:{},position:{}'.format(stationname, station_type, position))
+    current_app.logger.info('AddStationInfo   stationname:{},type:{},position:{}'.format(stationname, station_type, position))
 
     select_maxid_sql = 'select max(id) as maxid from m_stationinfo'
     select_maxid_result = db.select_db(select_maxid_sql)
     id = 0
-    print("__DEBUG__:----select_maxid_result:", select_maxid_result)
-    dict_data_of_maxid= tuple_to_dict(select_maxid_result, ["maxid"])
-    if dict_data_of_maxid[0]["maxid"] is None:
+    if select_maxid_result[0]['maxid'] is None:
         id = 1
     else:
-        id = int(dict_data_of_maxid[0]["maxid"]) + 1
+        id = int(select_maxid_result[0]['maxid']) + 1
     insert_dic = {
         'id': id,
         'stationname': stationname,
@@ -1130,6 +1088,9 @@ def GetStationDVRList():
     current_app.logger.info('GetStationDVRList   stationid:{}'.format(stationid))
     sqltotal = "select * from m_dvr  where stationid={}".format(stationid)
     totaldata = db.select_db(sqltotal)
+
+    print("total:", totaldata)
+
     json_list = []
     for i in totaldata:
         i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
@@ -1253,6 +1214,27 @@ def DeleteStationDVR():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+'''
+12.0 通过摄像头ID获取DVR/NVR 信息
+'''
+@realtimealarm.route('/GetStationDVRByCamID', methods=["post"])
+def GetStationDVRByCamID():
+    req = ReqResult()
+    cam_id = request.form.get("cam_id")
+    if cam_id == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('GetStationDVRByCamID   cam_id:{}'.format(cam_id))
+    sqltotal = "Select bb.ip,bb.`port`, bb.`user`,bb.pwd, aa.channel from m_camera aa LEFT JOIN m_dvr bb on aa.dvr_id = bb.dvr_id where camera_id={}".format(cam_id)
+    totaldata = db.select_db(sqltotal)
+
+    print("GetStationDVRByCamID:", totaldata[0])
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata[0]
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 '''
 12.DVR/NVR 摄像头信息列表
@@ -1308,14 +1290,14 @@ def AddStationDVRCam():
     select_maxid_sql = 'select max(camera_id) as maxid from m_camera'
     select_maxid_result = db.select_db(select_maxid_sql)
 
-    dvr_id = 0
+    cam_id = 0
     if select_maxid_result[0]['maxid'] is None:
-        dvr_id = 1
+        cam_id = 1
     else:
-        dvr_id = int(select_maxid_result[0]['maxid']) + 1
+        cam_id = int(select_maxid_result[0]['maxid']) + 1
     nowTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     insert_dic = {
-        'camera_id': dvr_id,
+        'camera_id': cam_id,
         'camera_name': camera_name,
         'dvr_id': dvr_id,
         'channel': channel,
@@ -2098,15 +2080,36 @@ def GetVisitationPlan():
 
 
 '''
-21.获取摄像头巡视任务计划
+21.0获取巡视当前执行表
 '''
+@realtimealarm.route('/GetCurVisitationPlan', methods=["post"])
+def GetCurVisitationPlan():
+    req = ReqResult()
+    current_app.logger.info('GetCurVisitationPlan ')
+    sqltotal = "select * from m_visitationplan where curprogress is not null and curprogress <100 and taskplanclass = 1"
+    totaldata = db.select_db(sqltotal)
+    for i in totaldata:
+        if i["predatetime"] is not None:
+            i["predatetime"] = i["predatetime"].strftime("%Y-%m-%d %H:%M:%S")
+        if i["createtime"] is not None:
+            i["createtime"] = i["createtime"].strftime("%Y-%m-%d %H:%M:%S")
+
+    print("GetCurVisitationPlan:", totaldata)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 
+
+'''
+21.01 获取摄像头巡视任务计划
+'''
 @realtimealarm.route('/GetViewVisitationPlan', methods=["post"])
 def GetViewVisitationPlan():
     req = ReqResult()
     current_app.logger.info('GetVisitationPlan ')
-    sqltotal = "select * from m_visitationplan where taskplanclass=1"
+    sqltotal = "select * from m_visitationplan where taskplanclass=0"
     totaldata = db.select_db(sqltotal)
     for i in totaldata:
         if i["predatetime"] is not None:
@@ -2114,6 +2117,26 @@ def GetViewVisitationPlan():
         if i["createtime"] is not None:
             i["createtime"] = i["createtime"].strftime("%Y-%m-%d %H:%M:%S")
     print("GetVisitationPlan:", totaldata)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+'''
+21.02 获取检测任务计划id list
+'''
+@realtimealarm.route('/GetVisitationPlanIDList', methods=["post"])
+def GetVisitationPlanIDList():
+    req = ReqResult()
+    current_app.logger.info('GetVisitationPlanIDList ')
+    sqltotal = "select id,taskplanname from m_visitationplan where taskplanclass=1"
+    totaldata = db.select_db(sqltotal)
+    # for i in totaldata:
+    #     if i["predatetime"] is not None:
+    #         i["predatetime"] = i["predatetime"].strftime("%Y-%m-%d %H:%M:%S")
+    #     if i["createtime"] is not None:
+    #         i["createtime"] = i["createtime"].strftime("%Y-%m-%d %H:%M:%S")
+    print("GetVisitationPlanIDList:", totaldata)
     req.code = 0
     req.msg = "读取成功"
     req.data = totaldata
@@ -2158,15 +2181,39 @@ def AddVisitationPlan():
         'taskpanh': taskpanh,
         'taskplanf': taskplanf,
         'taskplanm': taskplanm,
-        'predatetime': None,
+        'curmagicserial': '',
+        'curprogress': 0,
+        'predatetime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'createtime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
+    print("AddVisitationPlan Inserting data:", insert_dic)
     db.insertData(TableName, insert_dic)
     req1 = ReqResult()
     req1.code = 0
     req1.msg = "success"
 
     return json.dumps(req1.__dict__, ensure_ascii=False)
+
+
+@realtimealarm.route('/DeleteVisitationPlan', methods=["post"])
+def DeleteVisitationPlan():
+    id = request.form.get("id")
+    req = ReqResult()
+    if id == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('DeleteVisitationPlan   id:{}'.format(id))
+
+    sql = "delete from m_visitationplan where id={}".format(id)
+    print("----DeleteVisitationPlan sql:", sql)
+    db.execute_db(sql)
+    print("----DeleteVisitationPlan sql over!")
+
+    req.code = 0
+    req.msg = "success"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 
 '''
@@ -2261,9 +2308,38 @@ def GetAllVisitationHistoryPlan():
 
     current_app.logger.info('GetVisitationHistoryPlan ')
     sqltotal = "select * from m_visitationplanhistory aa LEFT JOIN m_visitationplan bb " \
-               "on aa.taskplanid = bb.id ORDER BY id desc limit {},{}".format(
+               "on aa.taskplanid = bb.id ORDER BY aa.id desc limit {},{}".format(
         str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
     totaldata = db.select_db(sqltotal)
+
+    for i in totaldata:
+        if i["taskstarttime"] is not None:
+            i["taskstarttime"] = i["taskstarttime"].strftime("%Y-%m-%d %H:%M:%S")
+        if i["taskendtime"] is not None:
+            i["taskendtime"] = i["taskendtime"].strftime("%Y-%m-%d %H:%M:%S")
+        if i["predatetime"] is not None:
+            i["predatetime"] = i["predatetime"].strftime("%Y-%m-%d %H:%M:%S")
+        if i["createtime"] is not None:
+            i["createtime"] = i["createtime"].strftime("%Y-%m-%d %H:%M:%S")
+
+    sqltotalcnt = "select count(*) as cnt from m_visitationplanhistory"
+    totaldatacnt = db.select_db(sqltotalcnt)
+    dateInfo = {}
+    dateInfo["datas"] = totaldata
+    dateInfo["count"] = len(totaldata)
+    dateInfo["total"] = totaldatacnt[0]["cnt"]
+    #req.data = dateInfo
+    #if len(listdata) == 0:
+    if totaldata is None:
+        req.code = 1
+        req.msg = "获取数据失败"
+    else:
+        req.data = dateInfo
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+
+
     print("GetVisitationPlan:", totaldata)
     req.code = 0
     req.msg = "读取成功"
@@ -2271,11 +2347,15 @@ def GetAllVisitationHistoryPlan():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
+
+
+
+
+
+
 '''
 21.5 获取巡视计划详细列表
 '''
-
-
 @realtimealarm.route('/GetVisitationPlanInfoList', methods=["post"])
 def GetVisitationPlanInfoList():
     id = request.form.get("id")
@@ -2295,6 +2375,13 @@ def GetVisitationPlanInfoList():
         .format(id, str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
 
     totaldata = db.select_db(sqltotal)
+
+    for i in totaldata:
+        if i["predatetime"] is not None:
+            i["predatetime"] = i["predatetime"].strftime("%Y-%m-%d %H:%M:%S")
+        if i["createtime"] is not None:
+            i["createtime"] = i["createtime"].strftime("%Y-%m-%d %H:%M:%S")
+
     print("GetVisitationPlanInfoList:", totaldata)
     req.code = 0
     req.msg = "读取成功"
@@ -2305,8 +2392,6 @@ def GetVisitationPlanInfoList():
 '''
 21.6 添加巡视计划子项
 '''
-
-
 @realtimealarm.route('/AddVisitationPlanSubInfo', methods=["post"])
 def AddVisitationPlanSubInfo():
     camid = request.form.get("camid")
@@ -2352,8 +2437,6 @@ def AddVisitationPlanSubInfo():
 '''
     21.7 删除巡视计划子项
 '''
-
-
 @realtimealarm.route('/DeleteVisitationPlanSubInfo', methods=["post"])
 def DeleteVisitationPlanSubInfo():
     id = request.form.get("id")
@@ -2378,8 +2461,6 @@ def DeleteVisitationPlanSubInfo():
 '''
    21.8. 修改巡视计划子项
 '''
-
-
 @realtimealarm.route('/UpdateVisitationPlanSubInfo', methods=["post"])
 def UpdateVisitationPlanSubInfo():
     id = request.form.get("id")
@@ -2397,20 +2478,114 @@ def UpdateVisitationPlanSubInfo():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('UpdateModelUseFlag   id:{},flag:{}'.format(id, camid))
     sql = "update m_visitationplaninfo " \
-          "set camid={},watchpoint={},ctlopt={},optipaddr={},checktype={},taskplanid={} where id={}" \
+          "set camid={},watchpoint={},ctlopt={},optipaddr='{}',checktype={},taskplanid={} where id={}" \
         .format(camid, watchpoint, ctlopt, optipaddr, checktype, taskplanid, id)
+    print("UpdateVisitationPlanSubInfo：", sql)
     db.execute_db(sql)
     req.code = 0
     req.msg = "success"
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+'''
+    21.9  获取巡视检测任务执行子项详情
+'''
+@realtimealarm.route('/GetVisitationPlanSubInfoById', methods=["post"])
+def GetVisitationPlanSubInfoById():
+    taskinfoid = request.form.get("taskinfoid")
+    req = ReqResult()
+    if taskinfoid == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    current_app.logger.info('GetVisitationHistoryPlan ')
+
+    sqltotal = "select * from m_visitationplaninfo where id  = {}".format(taskinfoid)
+
+    totaldata = db.select_db(sqltotal)
+    print("GetVisitationPlanSubInfoById:", totaldata)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+
+'''
+    22. 任务历史
+    22.1 获取巡视检测任务执行历史列表
+'''
+@realtimealarm.route('/GetVisitationPlanHisList', methods=["post"])
+def GetVisitationPlanHisList():
+    taskid = request.form.get("taskid")
+    pagesize = request.form.get("pagesize")
+    pagenum = request.form.get("pagenum")
+    req = ReqResult()
+    if taskid == None or pagesize == None or pagenum == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    current_app.logger.info('GetVisitationHistoryPlan ')
+
+    sqltotal = "SELECT *  FROM m_visitationplanhistory " \
+               "WHERE taskplanid = {} ORDER BY id DESC LIMIT {}, {}" \
+        .format(taskid, str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
+
+    totaldata = db.select_db(sqltotal)
+    for i in totaldata:
+        i["taskstarttime"] = i["taskstarttime"].strftime("%Y-%m-%d %H:%M:%S")
+        i["taskendtime"] = i["taskendtime"].strftime("%Y-%m-%d %H:%M:%S")
+    print("GetVisitationPlanHisList:", totaldata)
+    sqltotal = "select count(*) as cnt from m_visitationplanhistory WHERE taskplanid = {}".format(taskid)
+
+    cntdata = db.select_db(sqltotal)
+    current_app.logger.info('GetVisitationPlanHisList cntdata:{}'.format(cntdata))
+    # print(json_list)
+    # ret1 = json.dumps(json_list)
+    # print(ret1)
+
+    dateInfo = {}
+    dateInfo["datas"] = totaldata
+    dateInfo["count"] = len(totaldata)
+    dateInfo["total"] = cntdata[0]["cnt"]
+    req.code = 0
+    req.msg = "获取数据成功"
+    req.data = dateInfo
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+    22.2 获取巡视检测任务执行子项列表
+'''
+@realtimealarm.route('/GetVisitationPlanSubHisList', methods=["post"])
+def GetVisitationPlanSubHisList():
+    taskmagicserial = request.form.get("taskmagicserial")
+    pagesize = request.form.get("pagesize")
+    pagenum = request.form.get("pagenum")
+    req = ReqResult()
+    if taskmagicserial == None or pagesize == None or pagenum == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    current_app.logger.info('GetVisitationHistoryPlan ')
+
+    sqltotal = "select * from m_visitationplaninfohistory where taskmagicserial " \
+               " = '{}' ORDER BY id DESC LIMIT {}, {}" \
+        .format(taskmagicserial, str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
+
+    totaldata = db.select_db(sqltotal)
+    print("GetVisitationPlanSubHisList:", totaldata)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 '''
     23. 获取检修区域列表
 '''
-
-
 @realtimealarm.route('/GetJXRoomList', methods=["post"])
 def GetJXRoomList():
     sqltotal = "select * from m_stationroom aa LEFT JOIN m_stationinfo bb on aa.stationid = bb.id where optflag=1"
@@ -3873,6 +4048,141 @@ def GetAllAlarmList():
     return json.dumps(req.__dict__)
 
     # return 'ok'
+
+
+'''
+
+    27.获取指定变电站内指定摄像头的点位
+
+'''
+
+@realtimealarm.route('/Camera_point', methods=["post"])
+def GetCamera_pointsBycameraid():
+    req = ReqResult()
+    print("camera_id", request.form.get("camera_id"))
+    camera_id = request.form.get("camera_id")
+    if camera_id == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('GetCamera_pointsBycameraid   camera_id:{}'.format(camera_id))
+    sqltotal = "select * from m_camera_point  where camera_id='{}'".format(camera_id)
+    totaldata = db.select_db(sqltotal)
+    json_list = []
+    for i in totaldata:
+        if i["create_time"] != None:
+            i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+    print("GetCamera_pointsBycameraid:", json_list)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+
+'''
+   27.1 添加指定变电站内指定摄像头的点位
+'''
+@realtimealarm.route('/AddCamera_point', methods=["post"])
+def AddCamera_point():
+    camera_id = request.form.get("camera_id")
+    point_info = request.form.get("point_info")
+    point_type = request.form.get("point_type")
+    camera_type = request.form.get("camera_type")
+
+
+    req = ReqResult()
+    if camera_id == None or point_info == None \
+            or point_type == None :
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('AddCamera_point   camera_id:{},point_info:{},point_type:{},'
+                            'camera_type:{}'
+                            .format(0, camera_id, point_info, point_type, camera_type))
+
+    select_maxid_sql = 'select max(point_id) as maxid from m_camera_point'
+    select_maxid_result = db.select_db(select_maxid_sql)
+
+    point_id = 0
+    if select_maxid_result[0]['maxid'] is None:
+        point_id = 1
+    else:
+        point_id = int(select_maxid_result[0]['maxid']) + 1
+    nowTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    insert_dic = {
+       'point_id':point_id,
+        'camera_id': camera_id,
+        'point_info': point_info,
+        'point_type': point_type,
+        'camera_type': camera_type,
+        'create_time': nowTime
+    }
+    print("----111111111-----", insert_dic)
+    db.insertData("m_camera_point", insert_dic)
+    print("---22222222222------")
+    req.code = 0
+    req.msg = "success"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   27.2 修改指定变电站内指定摄像头的点位
+'''
+@realtimealarm.route('/ModifyCamera_point', methods=["post"])
+def ModifyCamera_point():
+    point_id = request.form.get("point_id")
+    point_info = request.form.get("point_info")
+    point_type = request.form.get("point_type")
+    camera_type = request.form.get("camera_type")
+
+    req = ReqResult()
+    if point_id == None or point_info == None or point_type == None \
+            or camera_type == None :
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('ModifyCamera_point   point_id:{},point_info:{},point_type:{},'
+                            'camera_type:{}'
+                            .format(point_id, point_info, point_type, camera_type))
+
+    sql = "update m_camera_point set point_info='{}',point_type='{}',camera_type='{}' where point_id={}".format(
+        point_info, point_type, camera_type, point_id)
+    print("----ModifyStationRoomInfo sql:", sql)
+    db.execute_db(sql)
+    print("----ModifyStationRoomInfo sql over!")
+
+    req.code = 0
+    req.msg = "success"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+    27.3 删除指定变电站内指定摄像头的点位
+'''
+@realtimealarm.route('/DeleteCamera_point', methods=["post"])
+def DeleteCamera_point():
+    point_id = request.form.get("point_id")
+    req = ReqResult()
+    if point_id == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('DeleteCamera_point   point_id:{}'.format(point_id))
+
+    sql = "delete from m_camera_point where point_id={}".format(point_id)
+    print("----DeleteStationDVR sql:", sql)
+    db.execute_db(sql)
+    print("----DeleteStationDVR sql over!")
+
+    req.code = 0
+    req.msg = "success"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
 
 
 
