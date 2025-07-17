@@ -102,7 +102,7 @@ def is_file_readable_with_content(file_path):
 def updateTaskPlanPreTimeAndMagicCode(planid,mgcode):
     print("updateTaskPlanPreTimeAndMagicCode:", planid,mgcode)
     #nowTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sqlstr = "update m_visitationplan set  curmagicserial='{}',curprogress=0,  where id ={}".format(mgcode, planid)
+    sqlstr = "update m_visitationplan set  curmagicserial='{}',curprogress=0 where id ={}".format(mgcode, planid)
     print("updateTaskPlanPreTimeAndMagicCode:",sqlstr)
     db.execute_db(sqlstr)
 
@@ -364,10 +364,12 @@ def VisitationPlanWorkerThread(mqDetectTask):
             print("VisitationPlanWorkerThread subitem:", totaldata)
             mgcode = generate_unique_code()
             if totaldata is None or len(totaldata) == 0:
+                print("--VisitationPlanWorkerThread no subitem, will update plan state and continue--")
                 updateTaskPlanPreTimeAndMagicCode(planid,mgcode)
                 updateTaskPlanState(planid, 100)
                 continue;
 
+            print("VisitationPlanWorkerThread totaldata:", totaldata)
             updateTaskPlanPreTimeAndMagicCode(planid, mgcode)
             print("InsertPlanInfoToHis")
             InsertPlanInfoToHis(planid,mgcode)
