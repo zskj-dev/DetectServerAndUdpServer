@@ -480,6 +480,19 @@ def VisitationPlanAction(mqDetectTask):
         except:
             pass
 
+# 配置调用巡视任务的次数
+# planeid:  巡视计划的ID
+# count:    设置巡视次数
+def set_visitation_plan_count(planid, count):
+    """
+    设置巡视计划的状态。
+
+    :param planid: 巡视计划的ID
+    :param count:  巡视次数
+    """
+    sqlstr = "UPDATE m_visitationplan SET taskplancount = {} WHERE id = {}".format(count, planid)
+    db.execute_db(sqlstr)
+
 '''
 time_difference = future_time - now
 minutes_difference = time_difference.total_seconds()
@@ -507,6 +520,7 @@ def VisitationPlanThread(mqDetectTask):
             taskplanf = totaldata[index]["taskplanf"]
             taskplanm = totaldata[index]["taskplanm"]
             predatetime = totaldata[index]["predatetime"]
+            taskplanecount = totaldata[index]["taskplancount"]
             predatetime1 = None
             if predatetime is not None:
                 predatetime1 = predatetime.strftime('%Y-%m-%d %H:%M:%S')
@@ -518,23 +532,21 @@ def VisitationPlanThread(mqDetectTask):
                 continue
             #--------- 周期任务 start----------
             if taskplantype == 0:  # 周期任务
-                biTime = None
-                if predatetime1 is None: #第一次执行，则用当前时间与创建时间比较
+                biTime = datetime.strptime(predatetime1, '%Y-%m-%d %H:%M:%S')
+                if 0 == taskplanecount: #第一次执行，则用当前时间与创建时间比较
                     createtime_obj = datetime.strptime(createtime, '%Y-%m-%d %H:%M:%S')
-                else:
-                    biTime = datetime.strptime(predatetime1, '%Y-%m-%d %H:%M:%S')
-                    #判断间隔时间是否已到
                 now = datetime.now()
                 time_difference = now - biTime
                 sec_difference = time_difference.total_seconds()
                 totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
                 if sec_difference > totalsec:
                     VisitationPlanWorker(id,mqDetectTask)
+                    set_visitation_plan_count(id, taskplanecount + 1)
             # --------- 周期任务 end----------
 
             # --------- 单次执行 start----------
             if taskplantype == 1:
-                if predatetime1 is None: #如果不为空，则执行过 就不在执行
+                if 0 == taskplanecount: #如果不为空，则执行过 就不在执行
                     createtime_obj = datetime.strptime(createtime, '%Y-%m-%d %H:%M:%S')
                     now = datetime.now()
                     time_difference = now - createtime_obj
@@ -542,20 +554,22 @@ def VisitationPlanThread(mqDetectTask):
                     totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
                     if sec_difference > totalsec:
                         VisitationPlanWorker(id, mqDetectTask)
+                        set_visitation_plan_count(id, taskplanecount + 1)
             # --------- 单次执行 end----------
 
             # --------- 每天定时循环 start----------
             if taskplantype == 2:
                 if is_within_one_minute( taskpanh+":"+taskplanf+":"+taskplanm) is True:
                     VisitationPlanWorker(id, mqDetectTask)
+                    set_visitation_plan_count(id, taskplanecount + 1)
             # --------- 每天定时循环 end----------
 
             # --------- 立即执行 start----------
             if taskplantype == 3:
-                if predatetime1 is None:  # 如果不为空，则执行过 就不在执行
+                if 0 == taskplanecount:  # 如果不为空，则执行过 就不在执行
                     VisitationPlanWorker(id, mqDetectTask)
+                    set_visitation_plan_count(id, taskplanecount + 1)
             # --------- 立即执行 end----------
-
         time.sleep(61)
 
 if __name__ == "__main__":

@@ -2184,7 +2184,8 @@ def AddVisitationPlan():
         'curmagicserial': '',
         'curprogress': 0,
         'predatetime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'createtime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        'createtime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'taskplancount': 0
     }
     print("AddVisitationPlan Inserting data:", insert_dic)
     db.insertData(TableName, insert_dic)
