@@ -453,20 +453,20 @@ def is_within_one_minute(target_time_str):
     # 获取当前时间
     now = datetime.now()
 
-    # 将当前时间的时间部分提取出来（虽然这里直接用 now 也行，但为了展示如何处理时间部分）
-    current_time = now.time()  # 实际上不需要单独提取，因为后续会用整个 now
+    # 计算当前时间从当天午夜开始的秒数
+    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    current_seconds = (now - start_of_day).total_seconds()
 
-    # 将设定的时间字符串转换为 datetime.time 对象
+    # 解析目标时间并计算秒数
     target_time = datetime.strptime(target_time_str, "%H:%M:%S").time()
+    target_seconds = target_time.hour * 3600 + target_time.minute * 60 + target_time.second
 
-    # 为了计算时间差，我们需要将 target_time 与一个任意日期结合
-    # 这里我们使用一个固定的日期，比如 1900-01-01
-    base_date = datetime(1900, 1, 1)
-    target_datetime = datetime.combine(base_date, target_time)
-    time_difference = abs(now - target_datetime)
+    # 计算最小时间差（考虑跨天情况）
+    diff = abs(current_seconds - target_seconds)
+    min_diff = min(diff, 86400 - diff)  # 86400秒=24小时
 
-    # 判断差值是否小于等于1分钟
-    return time_difference <= timedelta(minutes=1)
+    # 判断差值是否小于等于60秒（1分钟）
+    return min_diff <= 60
 
 def VisitationPlanAction(mqDetectTask):
     while True:
