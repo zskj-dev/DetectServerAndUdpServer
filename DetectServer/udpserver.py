@@ -442,8 +442,9 @@ def compare_time_parts_with_tolerance(time_a, time_b, tolerance=2):
 def VisitationPlanWorker(id,mqDetectTask):
     mqDetectTask.put([id])
 
-
-def is_within_one_minute(target_time_str):
+# 比较当前时间与设定的时间值的大小（秒级的比较）
+# return 正数表示设定时间大于当前时间，负数表示设定时间小于当前时间，0表示相等
+def time_sec_compare(target_time_str):
     """
     判断当前时间与设定的时间是否相差1分钟以内。
 
@@ -462,7 +463,17 @@ def is_within_one_minute(target_time_str):
     target_seconds = target_time.hour * 3600 + target_time.minute * 60 + target_time.second
 
     # 计算最小时间差（考虑跨天情况）
-    diff = abs(current_seconds - target_seconds)
+    return (current_seconds - target_seconds)
+
+def is_within_one_minute(target_time_str):
+    """
+    判断当前时间与设定的时间是否相差1分钟以内。
+
+    :param target_time_str: 设定的时间字符串，格式为 "HH:MM:SS"
+    :return: 如果相差1分钟以内返回 True，否则返回 False
+    """
+    # 计算最小时间差（考虑跨天情况）
+    diff = abs(time_sec_compare(target_time_str))
     min_diff = min(diff, 86400 - diff)  # 86400秒=24小时
 
     # 判断差值是否小于等于60秒（1分钟）
@@ -547,12 +558,13 @@ def VisitationPlanThread(mqDetectTask):
             # --------- 单次执行 start----------
             if taskplantype == 1:
                 if 0 == taskplanecount: #如果不为空，则执行过 就不在执行
-                    createtime_obj = datetime.strptime(createtime, '%Y-%m-%d %H:%M:%S')
-                    now = datetime.now()
-                    time_difference = now - createtime_obj
-                    sec_difference = time_difference.total_seconds()
-                    totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
-                    if sec_difference > totalsec:
+                    # createtime_obj = datetime.strptime(createtime, '%Y-%m-%d %H:%M:%S')
+                    # now = datetime.now()
+                    # time_difference = now - createtime_obj
+                    # sec_difference = time_difference.total_seconds()
+                    # totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
+                    # if sec_difference > totalsec:
+                    if 0 < time_sec_compare(str(taskpanh)+":"+str(taskplanf)+":"+str(taskplanm)):
                         VisitationPlanWorker(id, mqDetectTask)
                         set_visitation_plan_count(id, taskplanecount + 1)
             # --------- 单次执行 end----------
