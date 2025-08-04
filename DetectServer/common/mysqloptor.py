@@ -54,7 +54,7 @@ class MysqlDB(object):
                 # print(f"游标类型: {cursor.__class__.__name__}")
                 cursor.execute(sql)
                 result = cursor.fetchall()
-                assert isinstance(result, list), "select_db查询结果不是list类型"
+                # assert isinstance(result, list), "select_db查询结果不是list类型"
                 return result
 
     def execute_db(self, sql):

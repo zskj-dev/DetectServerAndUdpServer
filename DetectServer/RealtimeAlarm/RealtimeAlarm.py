@@ -360,9 +360,12 @@ def GetAllMsgFlagList():
 2. 获取所有确定并标记误报的信息
 3. 获取所有告警数据信息
 4. 获取所有标记的信息
+
+参数说明：
+    optflag1:0:未处理; 1:已处理
+    confirm :0:未确认; 1:已确认
+    state   :0:检测中; 3:检测告警; 4:下载图像失败
 '''
-
-
 def getlist(para_type, pagesize, pagenum):
     req = ReqResult()
     sql = ""
@@ -1012,7 +1015,8 @@ def AddStationRoom():
     insert_dic = {
         'id': id,
         'stationid': int(stationid),
-        'roomname': roomname
+        'roomname': roomname,
+        'optflag': 0
     }
     print("----111111111-----", insert_dic)
     db.insertData("m_stationroom", insert_dic)
