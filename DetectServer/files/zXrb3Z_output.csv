@@ -1,0 +1,2 @@
+id,nvrip,nvrport,nvruser,nvrpasswd,nvrchannel,stateval,state,taskfrom,errortype,errorimg,flag,updatetime,camera_name,roomname,stationname
+15,192.168.0.11,8000,admin,12345,1,检测中,0,检测终端,0,,1,2024-09-07 09:36:36,,,

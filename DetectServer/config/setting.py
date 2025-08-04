@@ -1,0 +1,22 @@
+
+#服务器端口
+SERVER_PORT = 8088
+
+#MYSQL
+MYSQL_HOST = "127.0.0.1"
+MYSQL_PORT = 3306
+MYSQL_USER = "root"
+MYSQL_PWD = "1234"
+MYSQL_DB = "d_detectsys"
+
+#redis
+REDIS_HOST = "127.0.0.1"
+REDIS_PORT = 6379
+REDIS_PASSWD = ""
+EXPIRE_TIME = 3600
+#MD5
+MD5_SALT = "detectalarmsystem"
+
+
+
+
