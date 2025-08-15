@@ -288,7 +288,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # build folder
-/build/
+DetectServer/build/*
 /build_linux/
 
 # Visual Studio Code
