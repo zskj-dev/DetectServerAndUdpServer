@@ -22,3 +22,4 @@ bin-release/
 DetectServer/runs/*
 *.pt
 *.pyc
+.idea/*
