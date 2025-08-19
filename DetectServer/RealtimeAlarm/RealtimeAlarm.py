@@ -360,11 +360,6 @@ def GetAllMsgFlagList():
 2. 获取所有确定并标记误报的信息
 3. 获取所有告警数据信息
 4. 获取所有标记的信息
-
-参数说明：
-    optflag1:0:未处理; 1:已处理
-    confirm :0:未确认; 1:已确认
-    state   :0:检测中; 3:检测告警; 4:下载图像失败
 '''
 def getlist(para_type, pagesize, pagenum):
     req = ReqResult()
@@ -395,8 +390,9 @@ def getlist(para_type, pagesize, pagenum):
     json_list = []
 
     for i in listdata:
-        i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
-        json_list.append(i)
+        if i["updatetime"] != None:
+            i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
+            json_list.append(i)
 
     sqltotal = ""  # "select count(*) as cnt from v_errlist where opsts != 20"
     if para_type == 0:
@@ -1551,13 +1547,19 @@ def GetStationDetectDevListByStationId():
     current_app.logger.info('GetStationDetectDevListByStationId   id:{}'.format(id))
 
     sqltotal = "select * from m_devrunconfig aa LEFT JOIN m_dvr bb" \
-               " on aa.dvrinfoid = bb.dvr_id where bb.stationid = {}".format(id)
+               " on aa.dvrinfoid = bb.dvr_id where bb.stationid = {} group by devid".format(id)
     # sql = "delete from m_camera where camera_id={}".format(camera_id)
     totaldata = db.select_db(sqltotal)
     print("GetStationDetectDevListByStationId:", totaldata)
+    json_list = []
+    for i in totaldata:
+        i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
     req.code = 0
     req.msg = "读取成功"
-    req.data = totaldata
+    req.data = json_list
+    # totaldata[0]['create_time'] = totaldata[0]['create_time'].isoformat()
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
@@ -2090,7 +2092,7 @@ def GetVisitationPlan():
 def GetCurVisitationPlan():
     req = ReqResult()
     current_app.logger.info('GetCurVisitationPlan ')
-    sqltotal = "select * from m_visitationplan where curprogress is not null and curprogress <100 and taskplanclass = 1"
+    sqltotal = "select * from m_visitationplan where taskplanstate=1 and taskplanclass = 1"
     totaldata = db.select_db(sqltotal)
     for i in totaldata:
         if i["predatetime"] is not None:
@@ -2189,7 +2191,7 @@ def AddVisitationPlan():
         'curprogress': 0,
         'predatetime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'createtime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'taskplancount': 0
+        'taskplancount':0
     }
     print("AddVisitationPlan Inserting data:", insert_dic)
     db.insertData(TableName, insert_dic)
@@ -4187,6 +4189,174 @@ def DeleteCamera_point():
     req.msg = "success"
 
     return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+28 获取指定站内房间roomID下的摄像头列表
+'''
+
+@realtimealarm.route('/GetStationRoomCamList', methods=["post"])
+def GetStationRoomCamList():
+    req = ReqResult()
+    roomid = request.form.get("roomid")
+    print("roomid:", roomid)
+    if roomid == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('GetStationRoomCamList roomid:{}'.format(roomid))
+    sqltotal = "select * from m_camera where roomid={}".format(roomid)
+    totaldata = db.select_db(sqltotal)
+    print(totaldata)
+    json_list = []
+    for i in totaldata:
+        i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    print("GetStationRoomCamList:", json_list)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = json_list
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   29 增加检修区域，房间可多选   2025年8月8日
+'''
+
+
+@realtimealarm.route('/AddOverhaulAreaRooms', methods=["post"])
+def AddOverhaulAreaRooms():
+    roomids = request.form.get("roomids")
+    starttime = request.form.get("starttime")
+    endtime = request.form.get("endtime")
+    # 去除时区部分
+    starttime1 = starttime.split(" GMT")[0]
+    endtime1=endtime.split(" GMT")[0]
+
+    starttime1=datetime.datetime.strptime(starttime1, "%a %b %d %Y %H:%M:%S")
+    endtime1 = datetime.datetime.strptime(endtime1, "%a %b %d %Y %H:%M:%S")
+    starttime=starttime1.strftime("%Y-%m-%d %H:%M:%S")
+    endtime=endtime1.strftime("%Y-%m-%d %H:%M:%S")
+    stat = 1
+    req = ReqResult()
+    if roomids == None or starttime == None or endtime == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('AddOverhaulAreaRooms   roomids:{},c:{},endtime:{}'.format(roomids, roomids, endtime))
+
+    select_maxid_sql = 'select max(id) as maxid from m_overhaularea'
+    select_maxid_result = db.select_db(select_maxid_sql)
+
+    id = 0
+    if select_maxid_result[0]['maxid'] is None :
+        id = 1
+    else:
+        # id = int(select_maxid_result[0]['maxid']) + 1
+        id=1
+    insert_dic = {
+        'id': id,
+        'roomids': roomids,
+        'starttime': starttime,
+        'endtime': endtime,
+        'stat': stat
+    }
+    print("----111111111-----", insert_dic)
+    db.insertData("m_overhaularea", insert_dic)
+    print("---22222222222------")
+    req.code = 0
+    req.msg = "success"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   29.1 查询检修区域，房间可多选   2025年8月8日
+'''
+
+
+@realtimealarm.route('/SelectOverhaulAreaRooms', methods=["post"])
+def SelectOverhaulAreaRooms():
+    req = ReqResult()
+    select_sql = "select * from m_overhaularea"
+    totaldata = db.select_db(select_sql)
+    if len(totaldata) <= 0:
+        req.code = 1
+        req.msg = "未设置检修区域"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+        print("未设置检修区域")
+    else:
+        current_app.logger.info('SelectOverhaulAreaRooms 查询检修区域{}'.format(totaldata))
+        for index in range(len(totaldata)):
+            id = totaldata[index]["id"]
+            roomids = totaldata[index]["roomids"]
+            starttime = totaldata[index]["starttime"]
+            endtime = totaldata[index]["endtime"]
+        json_list = []
+        for i in totaldata:
+            i["starttime"] = i["starttime"].strftime("%Y-%m-%d %H:%M:%S")
+            i["endtime"] = i["endtime"].strftime("%Y-%m-%d %H:%M:%S")
+            json_list.append(i)
+
+        print("SelectOverhaulAreaRooms:", json_list)
+        req.code = 0
+        req.msg = "读取成功"
+        req.data = json_list
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   29.2 删除清空检修区域，房间可多选   2025年8月12日
+'''
+
+
+@realtimealarm.route('/DeleteOverhaulAreaRooms', methods=["post"])
+def DELETEOverhaulAreaRooms():
+    id = request.form.get("id")
+    req = ReqResult()
+    if id == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    else:
+        db.execute_db("DELETE FROM m_overhaularea WHERE id = {}".format(id))
+        print("ID为1的数据已删除")
+        current_app.logger.info('DELETEOverhaulAreaRooms 删除检修区域ID为{}'.format(id))
+        req.code = 0
+        req.msg = "成功"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   29.3 修改检修区域，房间可多选时间修改   2025年8月12日
+'''
+
+
+@realtimealarm.route('/UpdateOverhaulAreaRooms', methods=["post"])
+def UpdateOverhaulAreaRooms():
+    id = request.form.get("id")
+    roomids = request.form.get("roomids")
+    starttime = request.form.get("starttime")
+    endtime = request.form.get("endtime")
+    stat = 1
+    req = ReqResult()
+    if id == None or id != '1':
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    else:
+        current_app.logger.info(
+            'UpdateOverhaulAreaRooms   id:{},roomids:{},starttime:{},endtime:{}'.format(id, roomids, starttime,
+                                                                                        endtime))
+        sql = "UPDATE m_overhaularea SET roomids='{}',starttime='{}',endtime='{}' WHERE id=1".format(str(roomids),
+                                                                                                     starttime, endtime)
+        db.execute_db(sql)
+        req.code = 0
+        req.msg = "success"
+
+        return json.dumps(req.__dict__, ensure_ascii=False)
 
 
 

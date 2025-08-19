@@ -106,6 +106,7 @@ def updateTaskPlanPreTimeAndMagicCode(planid,mgcode):
     print("updateTaskPlanPreTimeAndMagicCode:",sqlstr)
     db.execute_db(sqlstr)
 
+
 # 更新巡视计划的进度百分比
 def updateTaskPlanState(planid, val):
     sqlstr = "update m_visitationplaninfo set curprogress={}  where id ={}".format(val, planid)
@@ -180,7 +181,7 @@ def getNVRInfo(imgid):
     sqlstr = "select * from m_camera aa LEFT JOIN m_dvr bb on aa.dvr_id=bb.dvr_id where  camera_id = {}".format(imgid)
     print("getNVRInfo sql:", sqlstr)
     totaldata = db.select_db(sqlstr)
-    print(totaldata)
+    print("NVR",totaldata)
     if totaldata is not None and len(totaldata) > 0:
         return totaldata[0]
     return None
@@ -289,6 +290,129 @@ def PlanSubItemAction(iitem, mgcode):
         resultstr = 3
         errstr = json.dumps(status_data, ensure_ascii=False)
         UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+    else:
+        OverhaulAreaCameras, OverhaulArea_starttime, OverhaulArea_endtime = getOverhaulArearoom_Cameras()
+        if OverhaulAreaCameras !=[] and OverhaulArea_starttime !='' and OverhaulArea_endtime !='':
+            print(OverhaulAreaCameras, OverhaulArea_starttime, OverhaulArea_endtime)
+            time_format = "%Y-%m-%d %H:%M:%S"
+            current_time = str(datetime.now())
+            try:
+                # 尝试解析带微秒的格式
+                target_time = datetime.strptime(current_time, "%Y-%m-%d %H:%M:%S.%f")
+            except ValueError:
+                # 如果失败，尝试解析不带微秒的格式
+                target_time = datetime.strptime(current_time, "%Y-%m-%d %H:%M:%S")
+            print('当前时间{}'.format(target_time))
+            start_time = datetime.strptime(str(OverhaulArea_starttime), time_format)
+            end_time = datetime.strptime(str(OverhaulArea_endtime), time_format)
+            # current_time= datetime.datetime.now()
+            if target_time >= start_time and target_time <= end_time and iitem["camid"] in OverhaulAreaCameras:
+                print('{}该摄像头处于检修时间'.format(iitem["camid"]))
+            else:
+                print("start send opt msg:", iitem["ctlopt"])
+                imgid = iitem["camid"]
+                watchpoint = iitem["watchpoint"]
+                NVRInfo = getNVRInfo(imgid)
+                if NVRInfo is None:
+                    status_data["DownLoadImage"] = "NVR Info empty"
+                    errid = 10001
+                    resultstr = 2
+                    errstr = json.dumps(status_data, ensure_ascii=False)
+                    UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+                    return
+                print("NVRInfo", NVRInfo)
+                success = capture_camera_image_at_preset(
+                    NVRInfo["ip"],
+                    NVRInfo["port"],
+                    NVRInfo["user"],
+                    NVRInfo["pwd"],
+                    NVRInfo["channel"],  # 通道号
+                    watchpoint,  # 预置点编号
+                    imgfilenameonly,  # 输出文件名
+                    5  # 等待时间（秒）
+                )
+                if success == False:
+                    status_data["DownLoadImage"] = "Download Image Failed"
+                else:
+                    status_data["DownLoadImage"] = "Download Image Successed!"
+                resultstr = 3
+                errstr = json.dumps(status_data, ensure_ascii=False)
+                UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+
+                print("参数:", hisid, errstr, errid, errtype, resultstr)
+                try:
+                    systemsetting = getModelFileNameAndCurErrLevel()
+                    systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
+                                                                     systemsetting["curerrlevel"])
+                    # 检测图片并返回检测类型、检测state
+                    print(imgfilenameonly, systemsetting)
+                    detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
+                except Exception as e:
+                    print(e)
+                stat1 = detectImage_sigleresult.get("state")
+                # print("stat1:", stat1)
+                errortype1 = detectImage_sigleresult.get("errortype")
+                # print("errortype1:", errortype1)
+                errorimg1 = os.path.basename(imgfilenameonly)
+                # print("errorimg1:", errorimg1)
+                print("NVRInfo", NVRInfo)
+                InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+        else:
+            print("start send opt msg:", iitem["ctlopt"])
+            imgid = iitem["camid"]
+            watchpoint = iitem["watchpoint"]
+            NVRInfo = getNVRInfo(imgid)
+            if NVRInfo is None:
+                status_data["DownLoadImage"] = "NVR Info empty"
+                errid = 10001
+                resultstr = 2
+                errstr = json.dumps(status_data, ensure_ascii=False)
+                UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+                return
+            print("NVRInfo", NVRInfo)
+            success = capture_camera_image_at_preset(
+                NVRInfo["ip"],
+                NVRInfo["port"],
+                NVRInfo["user"],
+                NVRInfo["pwd"],
+                NVRInfo["channel"],  # 通道号
+                watchpoint,  # 预置点编号
+                imgfilenameonly,  # 输出文件名
+                5  # 等待时间（秒）
+            )
+            if success == False:
+                status_data["DownLoadImage"] = "Download Image Failed"
+            else:
+                status_data["DownLoadImage"] = "Download Image Successed!"
+            resultstr = 3
+            errstr = json.dumps(status_data, ensure_ascii=False)
+            UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+
+            print("参数:", hisid, errstr, errid, errtype, resultstr)
+            try:
+                systemsetting = getModelFileNameAndCurErrLevel()
+                systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
+                                                                 systemsetting["curerrlevel"])
+                # 检测图片并返回检测类型、检测state
+                print(imgfilenameonly, systemsetting)
+                detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
+            except Exception as e:
+                print(e)
+            stat1 = detectImage_sigleresult.get("state")
+            # print("stat1:", stat1)
+            errortype1 = detectImage_sigleresult.get("errortype")
+            # print("errortype1:", errortype1)
+            errorimg1 = os.path.basename(imgfilenameonly)
+            # print("errorimg1:", errorimg1)
+            print("NVRInfo", NVRInfo)
+            InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+
+
+
+
+
+
+
 
         #开始检测，并记录结果
         #if iitem["ctlopt"] == 0: #异常缺陷检测
@@ -299,6 +423,76 @@ def PlanSubItemAction(iitem, mgcode):
         #    UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
         #status_data["DetectImage"] = "Result"
 
+  # 检测单张图片告警后添加到errorinfo表
+
+# 获取房间下的摄像头列表    2025年8月8日
+def getOverhaulArearoom_Cameras():
+    select_maxid_sql = 'select max(id) as maxid from m_overhaularea'
+    select_maxid_result = db.select_db(select_maxid_sql)
+    id = 1
+    OverhaulAreaRooms=[]
+    OverhaulAreaCameras=[]
+    OverhaulArea_starttime=''
+    OverhaulArea_endtime=''
+    if select_maxid_result[0]['maxid']==id:
+        Overhaulsql = "select * from m_overhaularea where  id= {}".format(id)
+        totaldata = db.select_db(Overhaulsql)
+        print("OverhaulAreaCameras:", totaldata)
+        for iitem in totaldata:
+            OverhaulArea_endtime=iitem['endtime']
+            OverhaulArea_starttime=iitem['starttime']
+            OverhaulAreaRooms=iitem['roomids'].split(",")
+            print(OverhaulAreaRooms)
+            int_room_list = [int(num) for num in OverhaulAreaRooms]
+            roomids_str= ', '.join(map(str, int_room_list))
+            selectroomcamerasql="select camera_id from m_camera where  roomid in ({})".format(roomids_str)
+            totaldata1 = db.select_db(selectroomcamerasql)
+            print(totaldata1)
+            for cameraid in totaldata1:
+                OverhaulAreaCameras.append(cameraid['camera_id'])
+            print("OverhaulAreaCameras",OverhaulAreaCameras)
+        return OverhaulAreaCameras,OverhaulArea_starttime,OverhaulArea_endtime
+    else:
+        return OverhaulAreaCameras, OverhaulArea_starttime, OverhaulArea_endtime
+def InsertErrorSigleImage(NVRInfo,errorimg,errortype,state):
+    nvrip=NVRInfo["ip"]
+    nvrport=NVRInfo["port"]
+    nvruser=NVRInfo["user"]
+    nvrpasswd=NVRInfo["pwd"]
+    nvrchannel=NVRInfo["channel"]
+    print(NVRInfo)
+    TableName = "m_errorinfo"
+    select_maxid_sql = 'select max(id) as maxid from {}'.format(TableName)
+    select_maxid_result = db.select_db(select_maxid_sql)
+    id = 0
+    nowTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if select_maxid_result[0]['maxid'] is None:
+        id = 1
+    else:
+        id = int(select_maxid_result[0]['maxid']) + 1
+    insert_dic = {
+        'id': id,
+        'devid': 'bj200100',
+        'errdatetime': nowTime,
+        'nvrip': nvrip,
+        'nvrport': nvrport,
+        'nvruser': nvruser,
+        'nvrpasswd': nvrpasswd,
+        'nvrchannel': nvrchannel,
+        'errorimg': errorimg,
+        'errortype': errortype,
+        'errfrom': 0,
+        'revint': 0,
+        'revstr': "0",
+        'state': state,
+        'flag': 0,
+        'gifname': '',
+        'optflag1': 0,
+        'confirm': 0
+
+    }
+    db.insertData(TableName, insert_dic)
+    return id
 def InsertPlanInfoToHis(planid, mgcode):
     TableName = "m_visitationplanhistory"
     select_maxid_sql = 'select max(id) as maxid from {}'.format(TableName)
@@ -363,13 +557,12 @@ def VisitationPlanWorkerThread(mqDetectTask):
             totaldata = db.select_db(subitemsql)
             print("VisitationPlanWorkerThread subitem:", totaldata)
             mgcode = generate_unique_code()
+            print("________1111_________")
             if totaldata is None or len(totaldata) == 0:
-                print("--VisitationPlanWorkerThread no subitem, will update plan state and continue--")
                 updateTaskPlanPreTimeAndMagicCode(planid,mgcode)
                 updateTaskPlanState(planid, 100)
-                continue;
-
-            print("VisitationPlanWorkerThread totaldata:", totaldata)
+                continue
+            print("________2222_________")
             updateTaskPlanPreTimeAndMagicCode(planid, mgcode)
             print("InsertPlanInfoToHis")
             InsertPlanInfoToHis(planid,mgcode)
@@ -419,8 +612,8 @@ def udp_server(mqDetectTask,host='0.0.0.0', port=8009):
                 'state': 0,
                 'flag': 0,
                 'gifname':pd[6],
-                'optflag1':0,   # 新增字段，默认为0
-                'confirm':0     # 新增字段，默认为0
+                'optflag1':0,
+                'confirm':0
             }
             db.insertData(TableName, insert_dic)
             # devid = pd[0]
@@ -442,14 +635,39 @@ def compare_time_parts_with_tolerance(time_a, time_b, tolerance=2):
 def VisitationPlanWorker(id,mqDetectTask):
     mqDetectTask.put([id])
 
-# 比较当前时间与设定的时间值的大小（秒级的比较）
-# return 正数表示设定时间大于当前时间，负数表示设定时间小于当前时间，0表示相等
+
+# def is_within_one_minute(target_time_str):
+#     """
+#     判断当前时间与设定的时间是否相差1分钟以内。
+#
+#     :param target_time_str: 设定的时间字符串，格式为 "HH:MM:SS"
+#     :return: 如果相差1分钟以内返回 True，否则返回 False
+#     """
+#     # 获取当前时间
+#     now = datetime.now()
+#
+#     # 将当前时间的时间部分提取出来（虽然这里直接用 now 也行，但为了展示如何处理时间部分）
+#     current_time = now.time()  # 实际上不需要单独提取，因为后续会用整个 now
+#
+#     # 将设定的时间字符串转换为 datetime.time 对象
+#     target_time = datetime.strptime(target_time_str, "%H:%M:%S").time()
+#     print("时间:",target_time_str)
+#     # 为了计算时间差，我们需要将 target_time 与一个任意日期结合
+#     # 这里我们使用一个固定的日期，比如 1900-01-01
+#     base_date = datetime(2025, 7, 17)
+#     target_datetime = datetime.combine(base_date, target_time)
+#     time_difference = abs(target_datetime - now)
+#     print("time_difference:{%s},type:{%s}", time_difference, type(time_difference))
+#     # 判断差值是否小于等于1分钟
+#     return time_difference <= timedelta(minutes=1)
+
+# 比较当前时间与设定时间大小
 def time_sec_compare(target_time_str):
     """
-    判断当前时间与设定的时间是否相差1分钟以内。
+    将当前时间与设定的时间做比较，返回结果可以为负值
 
     :param target_time_str: 设定的时间字符串，格式为 "HH:MM:SS"
-    :return: 如果相差1分钟以内返回 True，否则返回 False
+    :return: 当前时间大于设定时间为正数；当前时间小于设定时间为负数；0：当前时间等于设定时间；
     """
     # 获取当前时间
     now = datetime.now()
@@ -463,7 +681,9 @@ def time_sec_compare(target_time_str):
     target_seconds = target_time.hour * 3600 + target_time.minute * 60 + target_time.second
 
     # 计算最小时间差（考虑跨天情况）
-    return (current_seconds - target_seconds)
+    diff = abs(current_seconds - target_seconds)
+    # min_diff = min(diff, 86400 - diff)  # 86400秒=24小时
+    return diff
 
 def is_within_one_minute(target_time_str):
     """
@@ -477,7 +697,7 @@ def is_within_one_minute(target_time_str):
     min_diff = min(diff, 86400 - diff)  # 86400秒=24小时
 
     # 判断差值是否小于等于60秒（1分钟）
-    return min_diff <= 60
+    return min_diff <= 30
 
 def VisitationPlanAction(mqDetectTask):
     while True:
@@ -531,7 +751,7 @@ def VisitationPlanThread(mqDetectTask):
             taskplanf = totaldata[index]["taskplanf"]
             taskplanm = totaldata[index]["taskplanm"]
             predatetime = totaldata[index]["predatetime"]
-            taskplanecount = totaldata[index]["taskplancount"]
+            taskplancount=totaldata[index]["taskplancount"]
             predatetime1 = None
             if predatetime is not None:
                 predatetime1 = predatetime.strftime('%Y-%m-%d %H:%M:%S')
@@ -544,47 +764,169 @@ def VisitationPlanThread(mqDetectTask):
             #--------- 周期任务 start----------
             if taskplantype == 0:  # 周期任务
                 biTime = datetime.strptime(predatetime1, '%Y-%m-%d %H:%M:%S')
-                if 0 == taskplanecount: #第一次执行，则用当前时间与创建时间比较
+                if 0 == taskplancount:  # 第一次执行，则用当前时间与创建时间比较
                     createtime_obj = datetime.strptime(createtime, '%Y-%m-%d %H:%M:%S')
                 now = datetime.now()
                 time_difference = now - biTime
                 sec_difference = time_difference.total_seconds()
                 totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
                 if sec_difference > totalsec:
-                    VisitationPlanWorker(id,mqDetectTask)
-                    set_visitation_plan_count(id, taskplanecount + 1)
+                    VisitationPlanWorker(id, mqDetectTask)
+                    set_visitation_plan_count(id, taskplancount + 1)
             # --------- 周期任务 end----------
 
             # --------- 单次执行 start----------
+            # 元代码
+            # if taskplantype == 1:
+            #     if predatetime1 is None: #如果不为空，则执行过 就不在执行
+            #     if taskplancount==0:
+            #         createtime_obj = datetime.strptime(createtime, '%Y-%m-%d %H:%M:%S')
+            #         now = datetime.now()
+            #         time_difference = now - createtime_obj
+            #         sec_difference = time_difference.total_seconds()
+            #         totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
+            #         if sec_difference > totalsec:
+            #             VisitationPlanWorker(id, mqDetectTask)
+            # 修改代码 2025年7月22日15:18
             if taskplantype == 1:
-                if 0 == taskplanecount: #如果不为空，则执行过 就不在执行
-                    # createtime_obj = datetime.strptime(createtime, '%Y-%m-%d %H:%M:%S')
+                # if predatetime1 is None: #如果不为空，则执行过 就不在执行
+                if taskplancount == 0:
+                    # createtime_obj = datetime.strptime(predatetime1, '%Y-%m-%d %H:%M:%S')
                     # now = datetime.now()
-                    # time_difference = now - createtime_obj
+
+                    #  '''
+                    # #时间字符串
+                    # #时间格式化匹配
+                    # '''
+                    # bdtime="00:00:00"
+                    # bdtime_format='%H:%M:%S'
+                    # bdtime1=datetime.strptime(bdtime,bdtime_format)
+                    # time_difference = (datetime.now()).strftime('%H:%M:%S')-bdtime1
                     # sec_difference = time_difference.total_seconds()
                     # totalsec = taskpanh * 3600 + taskplanf * 60 + taskplanm
                     # if sec_difference > totalsec:
                     if 0 < time_sec_compare(str(taskpanh)+":"+str(taskplanf)+":"+str(taskplanm)):
                         VisitationPlanWorker(id, mqDetectTask)
-                        set_visitation_plan_count(id, taskplanecount + 1)
+                        set_visitation_plan_count(id, taskplancount + 1)
             # --------- 单次执行 end----------
 
             # --------- 每天定时循环 start----------
             if taskplantype == 2:
-                if is_within_one_minute( taskpanh+":"+taskplanf+":"+taskplanm) is True:
+                if is_within_one_minute(str(taskpanh)+":"+str(taskplanf)+":"+str(taskplanm)) is True:
+                # if is_within_one_minute(taskpanh + ":" + taskplanf + ":" + taskplanm) is True:
+                    print("执行每天定时任务")
                     VisitationPlanWorker(id, mqDetectTask)
-                    set_visitation_plan_count(id, taskplanecount + 1)
+                    set_visitation_plan_count(id, taskplancount + 1)
+                else:
+                    print("没有执行每天定时任务")
             # --------- 每天定时循环 end----------
 
             # --------- 立即执行 start----------
             if taskplantype == 3:
-                if 0 == taskplanecount:  # 如果不为空，则执行过 就不在执行
+                print("====debug:entry taskplantype == 3")
+                # if predatetime1 is None:  # 如果不为空，则执行过 就不在执行
+                print('taskplancount:',taskplancount)
+                if taskplancount == 0:
                     VisitationPlanWorker(id, mqDetectTask)
-                    set_visitation_plan_count(id, taskplanecount + 1)
+                    set_visitation_plan_count(id, taskplancount + 1)
+                else:
+                    pass
+                    print("没有执行立即任务")
+
             # --------- 立即执行 end----------
+
         time.sleep(61)
 
+# 检测任务子项
+def DetectImage(imgfilenameonly,systemsetting):
+    detectImage_result={
+        "errortype":"",
+        "state":""
+    }
+    print("DetectImage:", imgfilenameonly,systemsetting)
+    type_counts = {str(k): 0 for k in systemsetting["info"].keys()}# 初始化类型计数器
+    model = YOLO(systemsetting["filename"])
+    if is_file_readable_with_content(imgfilenameonly):
+        with Image.open(imgfilenameonly) as img:
+            rgb_img = img.convert("RGB")
+            result=model.predict(source=imgfilenameonly)
+            # print("result:",result)
+            boxes = result[0].boxes.data.cpu().numpy()
+            for box in boxes:
+                x1, y1, x2, y2, conf, cls = box
+                if systemsetting["info"].get(str(int(cls)), 0) == 1:
+                    # 获取类别名称（根据你的模型类别定义）
+                    class_name = model.names[int(cls)]
+                    # 在图像上绘制边界框和类别名称
+                    draw = ImageDraw.Draw(rgb_img)
+                    color = localcolors[int(cls) % len(localcolors)]
+                    color = color_mapping[color]
+                    draw.rectangle([x1, y1, x2, y2], outline=color, width=2)
+                    # draw.rectangle([x1, y1, x2, y2],  width=2)
+                    draw.text((x1, y1 - 10), f"{class_name} {conf:.2f}", fill=color)
+                    # draw.text((x1, y1 - 10), f"{class_name} {conf:.2f}")
+                    # print("class_name:", class_name, [x1, y1, x2, y2], color)
+                    # 增加对应类别的计数
+                    type_counts[str(int(cls))] += 1
+            # rgb_img.save(imgfilenameonly, format="JPG")
+            rgb_img.save(imgfilenameonly)
+            # 确定出现最多的类型
+            most_common_type = max(type_counts, key=type_counts.get)
+            print(f"Most common type: {most_common_type} with count {type_counts[most_common_type]}")
+            state = 0
+            if (type_counts[most_common_type] == 0):
+                state = 1
+            elif (type_counts[most_common_type] >= 3):
+                state = 3
+            else:
+                state = 1
+            detectImage_result["state"]=state
+            detectImage_result["errortype"]=most_common_type
+            # print(detectImage_result)
+            return detectImage_result
+
+
+""" 2025年8月12日 检查并删除检修区域过期数据"""
+def _check_and_delete():
+    print("--check endtime and currenttime delete!--")
+    # preVisitationPlanTime = datetime.now()
+    sqltotal = "select * from m_overhaularea"
+    while True:
+        totaldata = db.select_db(sqltotal)
+        if len(totaldata) <= 0:
+            time.sleep(10)
+            continue
+        # print("totaldata:",totaldata)
+        for index in range(len(totaldata)):
+            id = totaldata[index]["id"]
+            endtime_str = totaldata[index]["endtime"]
+        # 解析时间字符串，根据实际格式调整
+        try:
+            # 假设时间格式为: %Y-%m-%d %H:%M:%S
+            endtime = datetime.strptime(str(endtime_str), "%Y-%m-%d %H:%M:%S")
+            current_time = datetime.now()
+
+            # 检查是否过期
+            if current_time > endtime:
+                print(f"当前时间 {current_time} 已超过结束时间 {endtime}，执行删除操作")
+                db.execute_db("DELETE FROM m_overhaularea WHERE id = 1")
+                print("ID为1的数据已删除")
+            else:
+                print(f"当前时间 {current_time} 未超过结束时间 {endtime}，不执行操作")
+        except ValueError as e:
+            print(f"时间格式解析错误: {e}")
+        time.sleep(10)
+
+
 if __name__ == "__main__":
+
+
+    # imgfilenameonly1 = r"E:\work\detect\proj\DetectServerAndUdpServer\DetectServer\runs\images\fef652b4-e800-479c-9af8-5899f863d808.jpg"
+    #
+    #
+    # detectImage_resulttest=DetectImage(imgfilenameonly1,systemsetting)
+    # print(detectImage_resulttest)
+
     p = Process(target=udp_server, args=(qDetectTask,))
     p.start()
     #pd = Process(target=CheckNvrChannelState, args=(id, pd[0], nvrip, nvrport, nvruser, nvrpasswd, nvrchannel))
@@ -594,5 +936,9 @@ if __name__ == "__main__":
     pdplan = Process(target=VisitationPlanThread, args=(qDetectTask,))
     pdplan.start()
 
+    # 增加检修区域因当前时间到期删除记录进程
+
+    overhaularea_time = Process(target=_check_and_delete)
+    overhaularea_time.start()
     # pdplana = Process(target=VisitationPlanAction, args=(qDetectTask,))
     # pdplana.start()
