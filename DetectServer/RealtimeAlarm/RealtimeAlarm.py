@@ -2072,7 +2072,33 @@ def UpdateMaintainInfo():
 def GetVisitationPlan():
     req = ReqResult()
     current_app.logger.info('GetVisitationPlan ')
+    taskplanclass = request.form.get("taskplanclass")
+    taskplanstate = request.form.get("taskplanstate")
+    taskplantype = request.form.get("taskplantype")
+
     sqltotal = "select * from m_visitationplan"
+    # 处理获取任务信息时做的筛选流程
+    if taskplanclass != None or taskplanstate != None or taskplantype == None:
+        string_concate = None
+        if taskplanclass != None:
+            string_concate = " where taskplanclass={}".format(taskplanclass)
+            sqltotal += string_concate
+
+        if taskplanstate != None:
+            if string_concate == None:
+                string_concate = " where taskplanstate={}".format(taskplanstate)
+            else:
+                string_concate = " and taskplanstate={}".format(taskplanstate)
+            sqltotal += string_concate
+
+        if taskplantype != None:
+            if string_concate == None:
+                string_concate = " where taskplantype={}".format(taskplantype)
+            else:
+                string_concate = " and taskplantype={}".format(taskplantype)
+            sqltotal += string_concate
+    print('sql execute total:{} '.format(sqltotal))
+
     totaldata = db.select_db(sqltotal)
     for i in totaldata:
         if i["predatetime"] is not None:
@@ -2409,10 +2435,18 @@ def AddVisitationPlanSubInfo():
     optipaddr = request.form.get("optipaddr")
     checktype = request.form.get("checktype")
     taskplanid = request.form.get("taskplanid")
+    metername = None
+    meternameflag = True
+
+    # 如果类型是表记读数，则需要添加‘表记名称’
+    if checktype == '1':
+        metername = request.form.get("metername")
+        if metername == None or metername == '': #不能不下发，也不能为空
+            meternameflag = False
 
     req = ReqResult()
     if camid == None or watchpoint == None or ctlopt == None \
-            or optipaddr == None or checktype == None or taskplanid == None:
+            or optipaddr == None or checktype == None or taskplanid == None or meternameflag == False:
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
@@ -2434,6 +2468,7 @@ def AddVisitationPlanSubInfo():
         'checktype': checktype,
         'taskplanid': taskplanid,
         'yiqiid': 0,
+        'metername': metername
     }
     db.insertData(TableName, insert_dic)
     req1 = ReqResult()
@@ -2479,6 +2514,8 @@ def UpdateVisitationPlanSubInfo():
     optipaddr = request.form.get("optipaddr")
     checktype = request.form.get("checktype")
     taskplanid = request.form.get("taskplanid")
+    metername = request.form.get("metername") #增加表计名称
+
     req = ReqResult()
     if id == None or camid == None or watchpoint == None or taskplanid == None \
             or ctlopt == None or optipaddr == None or checktype == None:
@@ -2486,9 +2523,16 @@ def UpdateVisitationPlanSubInfo():
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('UpdateModelUseFlag   id:{},flag:{}'.format(id, camid))
+
     sql = "update m_visitationplaninfo " \
-          "set camid={},watchpoint={},ctlopt={},optipaddr='{}',checktype={},taskplanid={} where id={}" \
-        .format(camid, watchpoint, ctlopt, optipaddr, checktype, taskplanid, id)
+          "set camid={},watchpoint={},ctlopt={},optipaddr='{}',checktype={},taskplanid={}" \
+        .format(camid, watchpoint, ctlopt, optipaddr, checktype, taskplanid)
+
+    # 如果是表记类且输入不为空，则更新此参数;如果为空，则不更新此项
+    if  checktype == 1 and metername != None:
+        sql += ",metername={}".format(metername)
+
+    sql += " where id={}".format(id)
     print("UpdateVisitationPlanSubInfo：", sql)
     db.execute_db(sql)
     req.code = 0
