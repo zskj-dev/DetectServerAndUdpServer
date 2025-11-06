@@ -18,6 +18,7 @@ class MysqlDB(object):
             db=db,
             autocommit=True,
             charset='utf8',
+            cursorclass=pymysql.cursors.DictCursor,
             connect_timeout=10,  # 连接超时时间
             read_timeout=300,  # 读取超时时间（秒）
             write_timeout=300,  # 写入超时时间（秒）
@@ -52,12 +53,22 @@ class MysqlDB(object):
                 cursor.execute(sql)
                 return cursor.fetchall()
 
+    # def execute_db(self, sql):
+    #     with self.pool.connection() as conn:
+    #         with conn.cursor() as cursor:
+    #             cursor.execute(sql)
+    #             conn.commit()
     def execute_db(self, sql):
-        with self.pool.connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(sql)
-                conn.commit()
-
+        try:
+            with self.pool.connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(sql)
+                    conn.commit()
+        except Exception as e:
+            print("execute_db error: {}".format(e))
+            # 如果有错误，回滚事务
+            with self.pool.connection() as conn:
+                conn.rollback()
         # try:
         #     self.conn.ping(reconnect=True)
         #     self.cur.execute(sql)

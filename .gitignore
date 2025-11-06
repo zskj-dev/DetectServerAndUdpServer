@@ -42,7 +42,7 @@
 *.lo
 
 # Shared objects (inc. Windows DLLs)
-*.dll
+  # *.dll
 *.so
 *.so.*
 *.dylib
@@ -298,5 +298,12 @@ $RECYCLE.BIN/
 *.jpeg
 *.gif
 *.jpg
+*.log
+*.pyc
+*.pt
+
+# build/app
+*/build/*
+
 
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,bazel,cmake,linux,macos,windows,jetbrains+all,visualstudiocode
