@@ -7,7 +7,6 @@ from RealtimeAlarm.RealtimeAlarm import realtimealarm
 # from TestErrorPage.TestErrorPage import testalarm
 
 from flask import Flask, jsonify, request
-import re, time
 from config.setting import SERVER_PORT
 import logging
 from multiprocessing import Process, Queue,Lock

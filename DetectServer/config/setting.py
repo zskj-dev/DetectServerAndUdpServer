@@ -1,12 +1,13 @@
 
 #服务器端口
-SERVER_PORT = 8088
+SERVER_PORT =9999
+    # 8088   冲突
 
 #MYSQL
 MYSQL_HOST = "127.0.0.1"
 MYSQL_PORT = 3306
 MYSQL_USER = "root"
-MYSQL_PWD = "123456"
+MYSQL_PWD = "rootroot"
 MYSQL_DB = "d_detectsys"
 
 #redis
