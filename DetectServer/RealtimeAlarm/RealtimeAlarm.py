@@ -885,14 +885,14 @@ def GetAllMsgInfoFile(msgtype):
 @realtimealarm.route('/AddStationInfo', methods=["post"])
 def AddStationInfo():
     stationname = request.form.get("stationname")
-    station_type = request.form.get("type")
+    type = request.form.get("type")
     position = request.form.get("position")
     req = ReqResult()
-    if station_type == None or position == None or stationname == None:
+    if type == None or position == None or stationname == None:
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
-    current_app.logger.info('AddStationInfo   stationname:{},type:{},position:{}'.format(stationname, station_type, position))
+    current_app.logger.info('AddStationInfo   stationname:{},type:{},position:{}'.format(stationname, type, position))
 
     select_maxid_sql = 'select max(id) as maxid from m_stationinfo'
     select_maxid_result = db.select_db(select_maxid_sql)
@@ -904,7 +904,7 @@ def AddStationInfo():
     insert_dic = {
         'id': id,
         'stationname': stationname,
-        'type': station_type,
+        'type': type,
         'position': position,
         'optchargeid': 0
     }
@@ -1016,7 +1016,7 @@ def AddStationRoom():
         'id': id,
         'stationid': int(stationid),
         'roomname': roomname,
-        'optflag': 0
+        'optflag':0
     }
     print("----111111111-----", insert_dic)
     db.insertData("m_stationroom", insert_dic)
@@ -1550,20 +1550,19 @@ def GetStationDetectDevListByStationId():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('GetStationDetectDevListByStationId   id:{}'.format(id))
 
-    sqltotal = "select * from m_devrunconfig aa LEFT JOIN m_dvr bb" \
-               " on aa.dvrinfoid = bb.dvr_id where bb.stationid = {} group by devid".format(id)
+    sqltotal = "select * from m_devrunconfig aa LEFT JOIN m_dvr bb on aa.dvrinfoid = bb.dvr_id where bb.stationid = {}".format(id)
     # sql = "delete from m_camera where camera_id={}".format(camera_id)
     totaldata = db.select_db(sqltotal)
     print("GetStationDetectDevListByStationId:", totaldata)
     json_list = []
     for i in totaldata:
-        i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        if i["create_time"] != None:
+            i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
         json_list.append(i)
 
     req.code = 0
     req.msg = "读取成功"
     req.data = json_list
-    # totaldata[0]['create_time'] = totaldata[0]['create_time'].isoformat()
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
@@ -2074,33 +2073,7 @@ def UpdateMaintainInfo():
 def GetVisitationPlan():
     req = ReqResult()
     current_app.logger.info('GetVisitationPlan ')
-    taskplanclass = request.form.get("taskplanclass")
-    taskplanstate = request.form.get("taskplanstate")
-    taskplantype = request.form.get("taskplantype")
-
     sqltotal = "select * from m_visitationplan"
-    # 处理获取任务信息时做的筛选流程
-    if taskplanclass != None or taskplanstate != None or taskplantype == None:
-        string_concate = None
-        if taskplanclass != None:
-            string_concate = " where taskplanclass={}".format(taskplanclass)
-            sqltotal += string_concate
-
-        if taskplanstate != None:
-            if string_concate == None:
-                string_concate = " where taskplanstate={}".format(taskplanstate)
-            else:
-                string_concate = " and taskplanstate={}".format(taskplanstate)
-            sqltotal += string_concate
-
-        if taskplantype != None:
-            if string_concate == None:
-                string_concate = " where taskplantype={}".format(taskplantype)
-            else:
-                string_concate = " and taskplantype={}".format(taskplantype)
-            sqltotal += string_concate
-    print('sql execute total:{} '.format(sqltotal))
-
     totaldata = db.select_db(sqltotal)
     for i in totaldata:
         if i["predatetime"] is not None:
@@ -2122,7 +2095,8 @@ def GetVisitationPlan():
 def GetCurVisitationPlan():
     req = ReqResult()
     current_app.logger.info('GetCurVisitationPlan ')
-    sqltotal = "select * from m_visitationplan where taskplanstate=1 and taskplanclass = 1"
+    # sqltotal = "select * from m_visitationplan where curprogress is not null and curprogress <100 and taskplanclass = 1"
+    sqltotal="select * from m_visitationplan where taskplanstate=1 and taskplanclass = 1"
     totaldata = db.select_db(sqltotal)
     for i in totaldata:
         if i["predatetime"] is not None:
@@ -4324,7 +4298,7 @@ def DeleteCamera_point():
 
 
 '''
-28 获取指定站内房间roomID下的摄像头列表
+    28 获取指定站内房间roomID下的摄像头列表
 '''
 
 @realtimealarm.route('/GetStationRoomCamList', methods=["post"])
@@ -4336,8 +4310,8 @@ def GetStationRoomCamList():
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
-    current_app.logger.info('GetStationRoomCamList roomid:{}'.format(roomid))
-    sqltotal = "select * from m_camera where roomid={}".format(roomid)
+    current_app.logger.info('GetStationRoomCamList   roomid:{}'.format(roomid))
+    sqltotal = "select * from m_camera  where roomid={}".format(roomid)
     totaldata = db.select_db(sqltotal)
     print(totaldata)
     json_list = []
@@ -4353,11 +4327,10 @@ def GetStationRoomCamList():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
+
 '''
    29 增加检修区域，房间可多选   2025年8月8日
 '''
-
-
 @realtimealarm.route('/AddOverhaulAreaRooms', methods=["post"])
 def AddOverhaulAreaRooms():
     roomids = request.form.get("roomids")
@@ -4386,8 +4359,8 @@ def AddOverhaulAreaRooms():
     if select_maxid_result[0]['maxid'] is None :
         id = 1
     else:
-        # id = int(select_maxid_result[0]['maxid']) + 1
-        id=1
+        id = int(select_maxid_result[0]['maxid']) + 1
+        # id=1
     insert_dic = {
         'id': id,
         'roomids': roomids,
@@ -4402,19 +4375,15 @@ def AddOverhaulAreaRooms():
     req.msg = "success"
 
     return json.dumps(req.__dict__, ensure_ascii=False)
-
-
 '''
    29.1 查询检修区域，房间可多选   2025年8月8日
 '''
-
-
 @realtimealarm.route('/SelectOverhaulAreaRooms', methods=["post"])
 def SelectOverhaulAreaRooms():
     req = ReqResult()
     select_sql = "select * from m_overhaularea"
-    totaldata = db.select_db(select_sql)
-    if len(totaldata) <= 0:
+    totaldata= db.select_db(select_sql)
+    if len(totaldata)<=0:
         req.code = 1
         req.msg = "未设置检修区域"
         return json.dumps(req.__dict__, ensure_ascii=False)
@@ -4442,8 +4411,6 @@ def SelectOverhaulAreaRooms():
 '''
    29.2 删除清空检修区域，房间可多选   2025年8月12日
 '''
-
-
 @realtimealarm.route('/DeleteOverhaulAreaRooms', methods=["post"])
 def DELETEOverhaulAreaRooms():
     id = request.form.get("id")
@@ -4460,35 +4427,32 @@ def DELETEOverhaulAreaRooms():
         req.msg = "成功"
         return json.dumps(req.__dict__, ensure_ascii=False)
 
-
 '''
    29.3 修改检修区域，房间可多选时间修改   2025年8月12日
 '''
-
-
 @realtimealarm.route('/UpdateOverhaulAreaRooms', methods=["post"])
 def UpdateOverhaulAreaRooms():
     id = request.form.get("id")
     roomids = request.form.get("roomids")
     starttime = request.form.get("starttime")
     endtime = request.form.get("endtime")
-    stat = 1
+    stat=1
     req = ReqResult()
-    if id == None or id != '1':
+    if id == None or id !='1' :
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     else:
-        current_app.logger.info(
-            'UpdateOverhaulAreaRooms   id:{},roomids:{},starttime:{},endtime:{}'.format(id, roomids, starttime,
-                                                                                        endtime))
-        sql = "UPDATE m_overhaularea SET roomids='{}',starttime='{}',endtime='{}' WHERE id=1".format(str(roomids),
-                                                                                                     starttime, endtime)
+        current_app.logger.info('UpdateOverhaulAreaRooms   id:{},roomids:{},starttime:{},endtime:{}'.format(id, roomids,starttime,endtime))
+        sql = "UPDATE m_overhaularea SET roomids='{}',starttime='{}',endtime='{}' WHERE id=1".format(str(roomids), starttime,endtime)
         db.execute_db(sql)
         req.code = 0
         req.msg = "success"
 
         return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+
 
 
 
