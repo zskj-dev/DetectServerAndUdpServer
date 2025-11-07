@@ -288,8 +288,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # build folder
-/build/
-/build_linux/
+*/build/*
+*/build_linux/*
 
 # Visual Studio Code
 .vscode/
@@ -301,9 +301,6 @@ $RECYCLE.BIN/
 *.log
 *.pyc
 *.pt
-
-# build/app
-*/build/*
 
 
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,bazel,cmake,linux,macos,windows,jetbrains+all,visualstudiocode
