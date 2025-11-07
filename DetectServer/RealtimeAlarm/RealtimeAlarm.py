@@ -4215,44 +4215,10 @@ def GetCamera_pointsBycameraid():
     print("GetCamera_pointsBycameraid:", json_list)
     req.code = 0
     req.msg = "读取成功"
-    req.data = json_list
+    req.data = totaldata
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
-def add_robot_point_if_not_exist(robot_id, robot_point_id, point_type):
-    '''
-    如果机器人点位不存在，则添加
-    :param robot_id:    机器人的身份识别ID(不是点位ID)
-    :param point_type:  预置点位的类别
-    :return:
-    '''
-    select_sql = "select * from m_robot_point where id='{}'".format(robot_point_id)
-    select_result = db.select_db(select_sql)
-    id = 0
-    if len(select_result) == 0:
-        # 添加机器人点位
-        select_maxid_sql = 'select max(id) as maxid from m_robot_point'
-        select_maxid_result = db.select_db(select_maxid_sql)
-
-        if select_maxid_result[0]['maxid'] is None:
-            robot_point_id = 1
-        else:
-            robot_point_id = int(select_maxid_result[0]['maxid']) + 1
-        nowTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        insert_dic = {
-            'id': robot_point_id,
-            'robot_id': robot_id,
-            'point_type': point_type,
-            'point_enable':0,           #新创建的默认不生效
-            'pos_x':0,
-            'pos_y':0,
-            'create_time': nowTime,
-        }
-        db.insertData("m_robot_point", insert_dic)
-    else:
-        robot_point_id = select_result[0]['id']
-
-    return robot_point_id
 
 '''
    27.1 添加指定变电站内指定摄像头的点位
@@ -4264,12 +4230,10 @@ def AddCamera_point():
     point_type = request.form.get("point_type")
     camera_type = request.form.get("camera_type")
 
-    robot_id = request.form.get("robot_id")
-    robot_point_id = request.form.get("robot_point_id")
 
     req = ReqResult()
     if camera_id == None or point_info == None \
-            or point_type == None or robot_point_id == None or robot_id == None:
+            or point_type == None :
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
@@ -4286,17 +4250,13 @@ def AddCamera_point():
     else:
         point_id = int(select_maxid_result[0]['maxid']) + 1
     nowTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    robot_point_id = add_robot_point_if_not_exist(robot_id, robot_point_id, point_type)
-
     insert_dic = {
        'point_id':point_id,
         'camera_id': camera_id,
         'point_info': point_info,
         'point_type': point_type,
         'camera_type': camera_type,
-        'create_time': nowTime,
-        'robot_point_id': robot_point_id
+        'create_time': nowTime
     }
     print("----111111111-----", insert_dic)
     db.insertData("m_camera_point", insert_dic)
@@ -4531,57 +4491,6 @@ def UpdateOverhaulAreaRooms():
         return json.dumps(req.__dict__, ensure_ascii=False)
 
 
-# 输入为字符穿，内含十六进制数，需要将其转换成十进制，并按公式转换为单位为米的距离
-def robot_point_position_value_convert(data):
-
-    for i in data:
-        pos_x_hex = i['pos_x']
-        pos_y_hex = i['pos_y']
-        print(f"Converting pos_x: {pos_x_hex}, pos_y: {pos_y_hex}")
-
-        #如果字符穿中有空格，先将空格去掉
-        pos_x_hex = pos_x_hex.replace(" ", "")
-        pos_y_hex = pos_y_hex.replace(" ", "")
-
-        pos_x_dec = int(pos_x_hex, 16)
-        pos_y_dec = int(pos_y_hex, 16)
-
-        # //圈数=3995/400=9.9875
-        # //距离=圈数*直径*3.1415926 (此处直径为4)
-        # 小数点后保留2位
-        pos_x_m = round((pos_x_dec / 400) * 4 * 3.1415926 / 100, 2)
-        pos_y_m = round((pos_y_dec / 400) * 4 * 3.1415926 / 100, 2)
-
-        i['pos_x'] = pos_x_m
-        i['pos_y'] = pos_y_m
-
-    return data
-
-'''
-   30.1 获取取指定变电站内指定机器人的全部点位信息
-'''
-@realtimealarm.route('/Robot_point', methods=["post"])
-def GetCamera_pointsByrobotid():
-    table_name = 'm_robot_point'
-    req = ReqResult()
-    robot_id = request.form.get("robot_id")
-    print("robot_id:", robot_id)
-  
-    current_app.logger.info('GetAllRobotpointID:{}')
-    sqltotal = "select id, point_type, pos_x, pos_y, create_time from {} where robot_id = {}".format(table_name, robot_id)
-    totaldata = db.select_db(sqltotal)
-    json_list = []
-    for i in totaldata:
-        if i["create_time"] != None and i["create_time"] != '':
-            i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
-        json_list.append(i)
-    print("GetCamera_pointsBycameraid:", json_list)
-
-    robot_point_position_value_convert(json_list)
-    req.code = 0
-    req.msg = "读取成功"
-    req.data = json_list
-    return json.dumps(req.__dict__, ensure_ascii=False)
 
 
 
