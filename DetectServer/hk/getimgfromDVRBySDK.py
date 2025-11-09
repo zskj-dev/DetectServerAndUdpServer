@@ -195,6 +195,42 @@ class HikvisionCapture:
         print("已登出设备并释放资源")
 
 
+    # 调用云台控制函数:支持摄像头云台上下左右移动
+    def ptz_control(self, channel, command, switch=0, speed=3):
+        command_print_map = {
+            21: "云台上仰",
+            22: "云台下俯",
+            23: "云台左转",
+            24: "云台右转",
+            25: "云台上仰和左转",
+            26: "云台上仰和右转",
+            27: "云台下俯和左转",
+            28: "云台下俯和右转"
+        }
+
+        switch_map = {
+            1: "停止",
+            0: "开始"
+        }
+
+         # 检查命令是否有效
+
+        if command not in command_print_map:
+            print(f"不支持的云台控制命令: {command}")
+            return False
+
+        # 调用云台控制函数
+        # b_ptzcontrol = self.hcnetsdk.NET_DVR_PTZControl_Other(self.user_id, channel, command, param, speed) 
+        b_ptzcontrol = self.hcnetsdk.NET_DVR_PTZControlWithSpeed_Other(self.user_id, channel, command, switch, speed)
+
+        if not b_ptzcontrol:
+            print("{}{}失败，错误码{}").format(switch_map[switch], command_print_map[command],self.hcnetsdk.NET_DVR_GetLastError())
+            return False
+        else:
+            print("设置'{}{}'成功".format(switch_map[switch], command_print_map[command]))
+            return True
+
+
 # 使用示例
 def capture_camera_image_at_preset(ip, port, username, password, channel, preset_id, output_file,
                                    wait_seconds=3):
@@ -231,21 +267,56 @@ def capture_camera_image_at_preset(ip, port, username, password, channel, preset
         # 确保资源释放
         capturer.logout()
 
+def camera_control_move(ip, port, username, password, channel, command, switch=0,
+                                   speed=3):
+    """
+    在指定预置点抓取海康威视摄像头图像
+
+    参数:
+        sdk_path (str): SDK库路径
+        ip (str): 设备IP地址
+        port (int): 设备端口
+        username (str): 登录用户名
+        password (str): 登录密码
+        channel (int): 通道号
+        preset_id (int): 预置点编号
+        output_file (str): 输出图片文件名
+        wait_seconds (int): 转动后等待时间，单位秒
+    """
+    # 创建抓图对象
+    capturer = HikvisionCapture(SDK_PATH)
+    try:
+        # 初始化SDK
+        if not capturer.initialize():
+            return False
+
+        # 登录设备
+        if not capturer.login(ip, port, username, password):
+            return False
+
+        # 在预置点抓图并恢复原位
+        return capturer.ptz_control(channel, command, switch, speed)
+
+    finally:
+        # 确保资源释放
+        capturer.logout()
+
 # 直接调用示例
 if __name__ == "__main__":
     print(SDK_PATH)
     #SDK_PATH = r"C:\\NVRDownloadImg"
-    DEVICE_IP = "192.168.0.11"
+    DEVICE_IP = "192.168.0.216"
     DEVICE_PORT = 8000
     USERNAME = "admin"
-    PASSWORD = "12345"
+    PASSWORD = "zskj1225"
     CHANNEL = 1
-    PRESET_ID = 0  # 目标预置点编号
+    PRESET_ID = 2  # 目标预置点编号
     OUTPUT_FILE = "preset_capture1.jpg"
-    WAIT_SECONDS = 3  # 转动后等待时间
+    WAIT_SECONDS = 10  # 转动后等待时间
+    SPEED = 3
 
     success = capture_camera_image_at_preset(
-        SDK_PATH,
+        # SDK_PATH,
         DEVICE_IP,
         DEVICE_PORT,
         USERNAME,
@@ -255,6 +326,18 @@ if __name__ == "__main__":
         OUTPUT_FILE,
         WAIT_SECONDS
     )
+
+    # success = camera_control_move(
+    #     # SDK_PATH,
+    #     DEVICE_IP,
+    #     DEVICE_PORT,
+    #     USERNAME,
+    #     PASSWORD,
+    #     CHANNEL,
+    #     21,
+    #     0,
+    #     SPEED
+    # )
 
     if success:
         print("预置点图像抓取成功")
