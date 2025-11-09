@@ -19,6 +19,8 @@ import csv
 from PIL import Image, ImageDraw
 import io
 
+import socket  # 下发机器人通知使用
+
 set_upload_path = 'images'
 set_result_path = 'images'
 
@@ -4585,12 +4587,174 @@ def GetCamera_pointsByrobotid():
 
 
 
+#巡视任务子项 执行函数
+def _sendOptInfoToDev(optipaddr, yiqiid,port=8081, timeout=60):
+    """
+    通过TCP发送命令并根据响应或超时判断结果
+
+    参数:
+        host (str): 服务器IP地址
+        port (int): 服务器端口
+        command (str): 要发送的命令
+        timeout (int): 超时时间（秒），默认10秒
+
+    返回:
+        bool: True表示成功，False表示失败
+    """
+    print("sendOptInfoToDev:", optipaddr, yiqiid, port)
+    try:
+        # 创建TCP套接字
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # 设置超时时间
+            s.settimeout(timeout)
+            # 连接服务器
+            # 连接到服务器
+            print(f"正在连接到:{optipaddr}:{port}...")
+            s.connect((optipaddr, port))
+            print(f"已成功连接到 {optipaddr}:{port}")
+
+            # 发送消息（需要先将字符串编码为字节）
+            message_bytes = str(yiqiid).encode('utf-8')
+            s.sendall(message_bytes)
+            print(f"已发送消息: {str(yiqiid)}")
+            # 发送命令
+            # 记录开始时间
+            start_time = time.time()
+            try:
+                # 接收响应
+                response = s.recv(1024).decode().strip()
+                print(f"收到响应: {response}")
+
+                # 根据响应内容判断结果
+                if response == "1":
+                    return True
+                else:  # 包括"0"和其他情况
+                    return False
+            except socket.timeout:
+                # 超时处理
+                elapsed_time = time.time() - start_time
+                print(f"超时({elapsed_time:.2f}秒): 未收到响应，视为成功")
+                return True
+
+    except Exception as e:
+        print(f"通信异常: {e}")
+        return False
+
+
+'''
+   30.2 发送机器人移动指令
+'''
+
+#发送机器人移动指令
+# opt_cmd: 
+# 0:无效命令
+# 1:左行（开）
+# 2:左行（关）
+# 3:右行（开）
+# 4.右行（关）
+# 5.下降（开）
+# 6.下降（关）
+# 7.上升（开）
+# 8.上升（关）
+# 9.灯光（开）
+# 10.灯光（关）
+# 11.高速（开）
+# 12.高速（关）
+
+opt_cmd_print_info = {
+    0: '无效命令',
+    1: '左行（开）',
+    2: '左行（关）',
+    3: '右行（开）',
+    4: '右行（关）',
+    5: '下降（开）',
+    6: '下降（关）',
+    7: '上升（开）',
+    8: '上升（关）',
+    9: '灯光（开）',
+    10: '灯光（关）',
+    11: '高速（开）',
+    12: '高速（关）',
+    13: '调用预置点位',
+    14: '设置预置点位'
+}
+
+# 发送机器人移动指令
+# opt_cmd: 操作码
+# opt_pos: 预置点位ID,当opt_cmd为13或14时有效为必选项
+@realtimealarm.route('/Robot_control', methods=["post"])
+def RobotControl_command():
+
+    '''
+    发送机器人移动指令
+    :param robot_id:  机器人的身份识别ID
+    :param opt_cmd :  操作码
+
+    :param speed:     移动速度
+    :return:
+    '''
+
+    table_name = 'm_robot'
+    req = ReqResult()
+    robot_id = request.form.get("robot_id")
+    opt_cmd = request.form.get("opt_cmd")
+    opt_pos = request.form.get("opt_pos")
+    print("rcv opt_cmd:{}, opt_pos:{}".format(opt_cmd, opt_pos))
+
+    command_dic = {
+        'robot_id': robot_id,
+        'opt_cmd': opt_cmd
+    }
+    err_msg=[]
+
+    command_json = json.dumps(command_dic)
+    print("Sending robot move command:", command_json)
+    # 这里添加实际发送命令的代码，例如通过消息队列或HTTP请求发送给机器人控制系统
+
+    #robot_id校验：根据robot_id获取对应的设备信息
+    sql = "SELECT * FROM {} WHERE id = {}".format(table_name, robot_id)
+    iitem = db.select_db(sql)
+    if not iitem:
+        err_msg = "No robot found with ID:" + robot_id
+        return -1, err_msg
+
+    # opt_cmd参数校验
+    if 13 == opt_cmd or 14 == opt_cmd:
+        if 0 == opt_pos  or '' == opt_pos or opt_pos is None:
+            err_msg = "opt_pos is required when opt_cmd is 13 or 14"
+            return -2, err_msg
+
+    robot_ip    = iitem[0]["robot_ip"]
+    robot_port  = iitem[0]["robot_port"]
+
+    cmd_list = {opt_cmd, opt_pos}
+    isok = _sendOptInfoToDev(robot_ip, cmd_list, robot_port)
+
+    return isok, err_msg
+
+
+
+def _robot_control_preset_command(robot_id, set_or_get, preset_point):
+    '''
+    发送机器人预设点指令
+    :param robot_id     :机器人的身份识别ID
+    :param set_or_get   :设置或调用预设点
+    1-设置预设点, 2-调用预设点
+    :param preset_point :预设点 
+    :return:
+    '''
+    command_dic = {
+        'robot_id': robot_id,
+        'command': 'preset',
+        'direction': direction,
+        'speed': speed,
+    }
+    command_json = json.dumps(command_dic)
+    print("Sending robot preset command:", command_json)
+    # 这里添加实际发送命令的代码，例如通过消息队列或HTTP请求发送给机器人控制系统
 
 
 
 
-
-
-
-
-
+    
+    pass
