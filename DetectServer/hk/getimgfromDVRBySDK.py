@@ -151,6 +151,37 @@ class HikvisionCapture:
             print(f"转动到预置点失败，错误码: {error_code}")
             return False
 
+    # 新增函数:调用/设置/清除预置点位，返回状态码和消息
+    def net_dvr_ptzPreset(self, channel, PresetCmd,  preset_id):
+
+        """转动摄像头到指定预置点"""
+        if self.user_id < 0:
+            return 3, "设备未登录, 请先登录设备"
+        
+        # 云台控制命令 - 转到预置点
+        # 宏定义	宏定义值	含义
+        # SET_PRESET	8	设置预置点
+        # CLE_PRESET	9	清除预置点
+        # GOTO_PRESET	39	转到预置点  
+        command = PresetCmd   # 云台定位到预置点
+        param = preset_id       # 预置点编号
+
+        # 调用SDK云台控制函数
+        result = self.hcnetsdk.NET_DVR_PTZPreset_Other(
+            self.user_id,
+            channel,
+            command,
+            param
+        )
+
+        if result:
+            print(f"成功转动到预置点 {preset_id}")
+            self.current_preset = preset_id
+            return 0, "成功转动到预置点"
+        else:
+            error_code = self.hcnetsdk.NET_DVR_GetLastError()
+            return 4, f"转动到预置点失败，错误码: {error_code}"
+
     def capture_at_preset(self, channel, preset_id, output_file, wait_seconds=3):
         """转动到预置点，抓图，然后恢复原位"""
         if self.user_id < 0:
@@ -163,7 +194,7 @@ class HikvisionCapture:
         try:
             # 转动到目标预置点
             if preset_id != 0:
-                if not self.goto_preset(channel, preset_id):
+                if not self.net_dvr_ptzPreset(channel, 39, preset_id):
                     return False
 
                 # 等待摄像头移动到位
@@ -224,10 +255,10 @@ class HikvisionCapture:
         b_ptzcontrol = self.hcnetsdk.NET_DVR_PTZControlWithSpeed_Other(self.user_id, channel, command, switch, speed)
 
         if not b_ptzcontrol:
-            print("{}{}失败，错误码{}").format(switch_map[switch], command_print_map[command],self.hcnetsdk.NET_DVR_GetLastError())
+            print(f"{switch_map[switch]}{command_print_map[command]}失败，错误码{self.hcnetsdk.NET_DVR_GetLastError()}")
             return False
         else:
-            print("设置'{}{}'成功".format(switch_map[switch], command_print_map[command]))
+            print(f"设置'{switch_map[switch]}{command_print_map[command]}'成功")
             return True
 
 
@@ -267,6 +298,7 @@ def capture_camera_image_at_preset(ip, port, username, password, channel, preset
         # 确保资源释放
         capturer.logout()
 
+# 手动控制摄像头移动
 def camera_control_move(ip, port, username, password, channel, command, switch=0,
                                    speed=3):
     """
@@ -301,42 +333,86 @@ def camera_control_move(ip, port, username, password, channel, command, switch=0
         # 确保资源释放
         capturer.logout()
 
+#摄像头预置点位控制
+def camera_control_preset(ip, port, username, password, channel, command, preset_id):
+    """
+      预置点位信息的设置和调用
+
+    参数:
+        ip (str): 设备IP地址
+        port (int): 设备端口
+        username (str): 登录用户名
+        password (str): 登录密码
+        channel (int): 通道号
+        command (int): 预置点命令
+        preset_id (int): 预置点编号
+    """
+    # 创建抓图对象
+    capturer = HikvisionCapture(SDK_PATH)
+    try:
+        # 初始化SDK
+        if not capturer.initialize():
+            return 1, "SDK初始化失败"
+
+        # 登录设备
+        if not capturer.login(ip, port, username, password):
+            return 2, "登录设备失败"
+
+        # 在预置点
+        return capturer.net_dvr_ptzPreset(channel, command, preset_id)
+
+    finally:
+        # 确保资源释放
+        capturer.logout()
+
+
 # 直接调用示例
 if __name__ == "__main__":
     print(SDK_PATH)
     #SDK_PATH = r"C:\\NVRDownloadImg"
-    DEVICE_IP = "192.168.0.216"
+    DEVICE_IP = "192.168.0.168"
     DEVICE_PORT = 8000
     USERNAME = "admin"
     PASSWORD = "zskj1225"
-    CHANNEL = 1
-    PRESET_ID = 2  # 目标预置点编号
+    CHANNEL = 35
+    PRESET_ID = 1  # 目标预置点编号
     OUTPUT_FILE = "preset_capture1.jpg"
     WAIT_SECONDS = 10  # 转动后等待时间
     SPEED = 3
 
-    success = capture_camera_image_at_preset(
-        # SDK_PATH,
-        DEVICE_IP,
-        DEVICE_PORT,
-        USERNAME,
-        PASSWORD,
-        CHANNEL,
-        PRESET_ID,
-        OUTPUT_FILE,
-        WAIT_SECONDS
-    )
-
-    # success = camera_control_move(
+    # success = capture_camera_image_at_preset(
     #     # SDK_PATH,
     #     DEVICE_IP,
     #     DEVICE_PORT,
     #     USERNAME,
     #     PASSWORD,
     #     CHANNEL,
-    #     21,
-    #     0,
-    #     SPEED
+    #     PRESET_ID,
+    #     OUTPUT_FILE,
+    #     WAIT_SECONDS
+    # )
+
+    success = camera_control_move(
+        # SDK_PATH,
+        DEVICE_IP,
+        DEVICE_PORT,
+        USERNAME,
+        PASSWORD,
+        CHANNEL,
+        22,
+        0,
+        SPEED
+    )
+
+    # success = camera_control_preset(
+    #     # SDK_PATH,
+    #     DEVICE_IP,
+    #     DEVICE_PORT,
+    #     USERNAME,
+    #     PASSWORD,
+    #     CHANNEL,
+    #     39,
+    #     PRESET_ID
     # )
 
     if success:
