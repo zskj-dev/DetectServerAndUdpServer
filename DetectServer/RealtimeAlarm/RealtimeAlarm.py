@@ -4532,6 +4532,29 @@ def UpdateOverhaulAreaRooms():
 
         return json.dumps(req.__dict__, ensure_ascii=False)
 
+'''
+   30 获取全部机器人列表
+'''
+@realtimealarm.route('/GetAllRobotList', methods=["post"])
+def GetAllRobotInfo():
+    req = ReqResult()
+    sqltotal = "select * from m_robot"
+    totaldata = db.select_db(sqltotal)
+    if len(totaldata) <= 0 or totaldata is None:
+        req.code = 1
+        req.msg = "未设置机器人信息"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    json_list = []
+    for i in totaldata:
+        if i["create_time"] != None:
+            i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+    print("GetAllRobotList:", json_list)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = json_list
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 # 输入为字符穿，内含十六进制数，需要将其转换成十进制，并按公式转换为单位为米的距离
 def robot_point_position_value_convert(data):
@@ -4587,8 +4610,11 @@ def GetCamera_pointsByrobotid():
 
 
 
-#巡视任务子项 执行函数
-def _sendOptInfoToDev(optipaddr, yiqiid,port=8081, timeout=60):
+#参照："巡视任务子项 执行函数",此处单独处理下发流程
+# params:
+#   optipaddr: 机器人的IP地址
+#   yiqiid:  发送的命令，可以是字符串或集合类型
+def _sendOptInfoToDev(optipaddr,  yiqiid, port=8081, timeout=60):
     """
     通过TCP发送命令并根据响应或超时判断结果
 
@@ -4601,7 +4627,7 @@ def _sendOptInfoToDev(optipaddr, yiqiid,port=8081, timeout=60):
     返回:
         bool: True表示成功，False表示失败
     """
-    print("sendOptInfoToDev:", optipaddr, yiqiid, port)
+    print("sendOptInfoToDev IP:{optipaddr},port:{port}, opt_cmd:{yiqiid}")
     try:
         # 创建TCP套接字
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -4614,9 +4640,13 @@ def _sendOptInfoToDev(optipaddr, yiqiid,port=8081, timeout=60):
             print(f"已成功连接到 {optipaddr}:{port}")
 
             # 发送消息（需要先将字符串编码为字节）
+            #如果yiqiid是集合类型，则转换为字符串
+            if isinstance(yiqiid, (set, list, tuple)):
+                yiqiid = ' '.join(map(str, yiqiid))
+
             message_bytes = str(yiqiid).encode('utf-8')
             s.sendall(message_bytes)
-            print(f"已发送消息: {str(yiqiid)}")
+            print(f"已发送消息: {str(message_bytes)}")
             # 发送命令
             # 记录开始时间
             start_time = time.time()
@@ -4627,61 +4657,90 @@ def _sendOptInfoToDev(optipaddr, yiqiid,port=8081, timeout=60):
 
                 # 根据响应内容判断结果
                 if response == "1":
-                    return True
+                    return 0, "操作成功"
                 else:  # 包括"0"和其他情况
-                    return False
+                    return 4, "机器人服务响应内容错误"
             except socket.timeout:
                 # 超时处理
                 elapsed_time = time.time() - start_time
                 print(f"超时({elapsed_time:.2f}秒): 未收到响应，视为成功")
-                return True
+                return 5, "通信超时，未收到响应"
 
     except Exception as e:
         print(f"通信异常: {e}")
-        return False
+        return 6, "通信异常: " + str(e)
 
 
 '''
    30.2 发送机器人移动指令
 '''
+def _command_input_parese_print(opt_cmd, opt_pos):
+    '''
+    解析操作码，打印对应的操作信息
+    :param opt_cmd: 操作码
+    :return:
+    '''
+    opt_cmd_print_info = {
+        0: '无效命令',
+        1: '左行 ',
+        2: '右行',
+        3: '下降',
+        4: '上升',
+        5: '灯光',
+        6: '高速',
+        7: '调用预置点位',
+        8: '设置预置点位',
+        9: '查询位置'
+    }
+    opt_switch_print_info = {
+        1: '开',
+        0: '关'
+    }
 
-#发送机器人移动指令
-# opt_cmd: 
-# 0:无效命令
-# 1:左行（开）
-# 2:左行（关）
-# 3:右行（开）
-# 4.右行（关）
-# 5.下降（开）
-# 6.下降（关）
-# 7.上升（开）
-# 8.上升（关）
-# 9.灯光（开）
-# 10.灯光（关）
-# 11.高速（开）
-# 12.高速（关）
+    # 参数校验
+    if opt_cmd is None or opt_cmd == '' or opt_pos is None or opt_pos == '':
+        print("opt_cmd/opt_pos is None or empty")
+        return -1
 
-opt_cmd_print_info = {
-    0: '无效命令',
-    1: '左行（开）',
-    2: '左行（关）',
-    3: '右行（开）',
-    4: '右行（关）',
-    5: '下降（开）',
-    6: '下降（关）',
-    7: '上升（开）',
-    8: '上升（关）',
-    9: '灯光（开）',
-    10: '灯光（关）',
-    11: '高速（开）',
-    12: '高速（关）',
-    13: '调用预置点位',
-    14: '设置预置点位'
-}
+    opt_cmd_int = int(opt_cmd)
+    opt_pos_int = int(opt_pos)
+
+    if opt_cmd_int in opt_cmd_print_info:
+        if opt_cmd_int in [7, 8]:  # 预置点命令
+            if opt_pos is not None:
+                print("Received command: {} - {}, preset point ID: {}".format(
+                    opt_cmd_int,
+                    opt_cmd_print_info[opt_cmd_int],
+                    opt_pos
+                ))
+            else:
+                print("Received command: {} - {}, preset point ID: Not provided".format(
+                    opt_cmd_int,
+                    opt_cmd_print_info[opt_cmd_int]
+                ))
+        elif opt_cmd_int in [1, 6]:   # 普通开关命令
+            if opt_pos_int != 0 and opt_pos_int != 1:
+                print("switch value invalid for command {}, must be 0[off] or 1[on]".format(opt_cmd_print_info[opt_cmd_int]))
+                return -1
+            print("Received command: {} - {}, switch:{} - {}".format(
+                    opt_cmd_int,
+                    opt_cmd_print_info[opt_cmd_int],
+                    opt_pos_int,
+                    opt_switch_print_info[opt_pos_int]
+                ))
+        else: #查询位置坐标
+            print("Received command: {} - {}".format(
+                    opt_cmd_int,
+                    opt_cmd_print_info[opt_cmd_int]
+                ))
+        return 0    
+    else:
+        print("Received command: {} - Unknown command".format(opt_cmd_int))
+        return -1
 
 # 发送机器人移动指令
-# opt_cmd: 操作码
-# opt_pos: 预置点位ID,当opt_cmd为13或14时有效为必选项
+# opt_cmd  : 操作码
+# opt_param: 参数
 @realtimealarm.route('/Robot_control', methods=["post"])
 def RobotControl_command():
 
@@ -4689,8 +4748,7 @@ def RobotControl_command():
     发送机器人移动指令
     :param robot_id:  机器人的身份识别ID
     :param opt_cmd :  操作码
-
-    :param speed:     移动速度
+    :param opt_param: 参数
     :return:
     '''
 
@@ -4698,12 +4756,13 @@ def RobotControl_command():
     req = ReqResult()
     robot_id = request.form.get("robot_id")
     opt_cmd = request.form.get("opt_cmd")
-    opt_pos = request.form.get("opt_pos")
-    print("rcv opt_cmd:{}, opt_pos:{}".format(opt_cmd, opt_pos))
+    opt_param = request.form.get("opt_param")
+    print("rcv opt_cmd:{}, opt_pos:{}".format(opt_cmd, opt_param))
 
     command_dic = {
         'robot_id': robot_id,
-        'opt_cmd': opt_cmd
+        'opt_cmd': opt_cmd,
+        'opt_param': opt_param
     }
     err_msg=[]
 
@@ -4711,50 +4770,31 @@ def RobotControl_command():
     print("Sending robot move command:", command_json)
     # 这里添加实际发送命令的代码，例如通过消息队列或HTTP请求发送给机器人控制系统
 
+    # 参数校验
+    if robot_id is None or robot_id == '':
+        req.code = 1
+        req.msg = "robot_id is required"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    
+    if (0 != _command_input_parese_print(opt_cmd, opt_param)):
+        req.code = 2
+        req.msg = "opt_cmd is invalid, opt_cmd:" + str(opt_cmd) + ", opt_pos:" + str(opt_param)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
     #robot_id校验：根据robot_id获取对应的设备信息
     sql = "SELECT * FROM {} WHERE id = {}".format(table_name, robot_id)
     iitem = db.select_db(sql)
     if not iitem:
-        err_msg = "No robot found with ID:" + robot_id
-        return -1, err_msg
-
-    # opt_cmd参数校验
-    if 13 == opt_cmd or 14 == opt_cmd:
-        if 0 == opt_pos  or '' == opt_pos or opt_pos is None:
-            err_msg = "opt_pos is required when opt_cmd is 13 or 14"
-            return -2, err_msg
+        req.code = 3, err_msg
+        req.msg = "No robot found in database:" + table_name + " with ID:" + robot_id
+        return json.dumps(req.__dict__, ensure_ascii=False)
 
     robot_ip    = iitem[0]["robot_ip"]
     robot_port  = iitem[0]["robot_port"]
 
-    cmd_list = {opt_cmd, opt_pos}
-    isok = _sendOptInfoToDev(robot_ip, cmd_list, robot_port)
+    # 拼接发送命令字符串
+    str_cmd = str(opt_cmd) + ' ' + str(opt_param)
+    req.code, req.msg = _sendOptInfoToDev(robot_ip, str_cmd, robot_port)
 
-    return isok, err_msg
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
-
-
-def _robot_control_preset_command(robot_id, set_or_get, preset_point):
-    '''
-    发送机器人预设点指令
-    :param robot_id     :机器人的身份识别ID
-    :param set_or_get   :设置或调用预设点
-    1-设置预设点, 2-调用预设点
-    :param preset_point :预设点 
-    :return:
-    '''
-    command_dic = {
-        'robot_id': robot_id,
-        'command': 'preset',
-        'direction': direction,
-        'speed': speed,
-    }
-    command_json = json.dumps(command_dic)
-    print("Sending robot preset command:", command_json)
-    # 这里添加实际发送命令的代码，例如通过消息队列或HTTP请求发送给机器人控制系统
-
-
-
-
-    
-    pass
