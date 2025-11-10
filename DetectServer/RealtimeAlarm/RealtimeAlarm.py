@@ -20,6 +20,7 @@ from PIL import Image, ImageDraw
 import io
 
 import socket  # 下发机器人通知使用
+from hk.getimgfromDVRBySDK import *
 
 set_upload_path = 'images'
 set_result_path = 'images'
@@ -4797,4 +4798,82 @@ def RobotControl_command():
     req.code, req.msg = _sendOptInfoToDev(robot_ip, str_cmd, robot_port)
 
     return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+# 根据摄像头预置点得到机器人基本信息
+def __getRobotInfoByCameraPresetID(preset_id):
+
+    camera_point_tabale_name = 'm_camera_point'
+    robot_point_tabale_name = 'm_robot_point'
+    robot_info_table_name = 'm_robot'
+
+
+
+
+def _camera_preset_with_robot(preset_id):
+    
+    camera_point_tabale_name = 'm_camera_point'
+    robot_point_tabale_name = 'm_robot_point'
+    #根据摄像头预置点位，找到机器人预置点并下发
+
+    sql = "SELECT * FROM {} WHERE point_id = {}".format(camera_point_tabale_name, preset_id)
+    item = db.select_db(sql)
+    if not item:
+        return 3, "No robot preset found in database:" + camera_point_tabale_name + " with preset ID:" + preset_id
+        
+    #如果找到了，下发给轨道机器人
+    robot_preset_id = item['robot_point_id']
+
+    _sendOptInfoToDev(robot_ip, str_cmd, robot_port)
+
+
+    req = ReqResult()
+    req.code = 0
+    req.msg = '成功'
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+@realtimealarm.route('/Camera_control', methods=["post"])
+def CameraControl_command():
+
+    stationinfo_table_name = 'm_stationinfo'
+    stationroom_table_name = 'm_stationroom'
+    nvr_table_name = 'm_dvr'
+    camera_table_name = 'm_camera'
+
+    req = ReqResult()
+    station_id = request.form.get("station_id")
+    nvr_id = request.form.get("nvr_id")
+    camera_id = request.form.get("camera_id")
+
+    camera_opt_cmd= request.form.get("opt_cmd")
+    camera_opt_param = request.form.get("opt_param")
+
+
+    sql = "SELECT * FROM {} WHERE id = {}".format(nvr_table_name, station_id, nvr_id)
+    result_for_nvr = db.select_db(sql)
+    if not result_for_nvr:
+        req.code = 3
+        req.msg = "No robot found in database:" + stationroom_table_name + " with station_id:" + station_id + " and nvr_id:" + nvr_id
+        return json.dumps(req.__dict__, ensure_ascii=False)
+       
+    sql = "SELECT * FROM {} WHERE camera_id = {}".format(camera_table_name, camera_id)
+    result_for_camera = db.select_db(sql)
+    if not result_for_camera:
+        req.code = 4
+        req.msg = "No robot found in database:" + camera_table_name + " with carema_id:" + camera_id
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    nvr_ip = result_for_nvr['ip']
+    nvr_port = result_for_nvr['port']
+    nvr_usr = result_for_nvr['user']
+    nvr_pwd = result_for_nvr['pwd']
+    channel = result_for_camera['channel']
+
+
+    # 下发移动操作
+    camera_opt_cmd_int = int(camera_opt_cmd)
+    if 
+    camera_control_move(nvr_ip, nvr_port, nvr_usr, nvr_pwd, channel, camera_opt_cmd, camera_opt_param)
+
 
