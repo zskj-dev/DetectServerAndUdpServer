@@ -4690,8 +4690,8 @@ def _command_input_parese_print(opt_cmd, opt_pos):
         5: '灯光',
         6: '高速',
         7: '调用预置点位',
-        8: '设置预置点位',
-        9: '查询位置'
+        8: '查询位置',
+        # 9: '设置预置点位'
     }
     opt_switch_print_info = {
         1: '开',
@@ -4707,7 +4707,7 @@ def _command_input_parese_print(opt_cmd, opt_pos):
     opt_pos_int = int(opt_pos)
 
     if opt_cmd_int in opt_cmd_print_info:
-        if opt_cmd_int in [7, 8]:  # 预置点命令
+        if opt_cmd_int in [7]:  # 预置点命令
             if opt_pos is not None:
                 print("Received command: {} - {}, preset point ID: {}".format(
                     opt_cmd_int,
@@ -4873,7 +4873,7 @@ def CameraControl_command():
 
     # 下发移动操作
     camera_opt_cmd_int = int(camera_opt_cmd)
-    if 
+
     camera_control_move(nvr_ip, nvr_port, nvr_usr, nvr_pwd, channel, camera_opt_cmd, camera_opt_param)
 
 
