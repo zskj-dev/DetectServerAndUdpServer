@@ -3342,6 +3342,30 @@ def _command_input_parese_print(opt_cmd, opt_pos):
         print("Received command: {} - Unknown command".format(opt_cmd_int))
         return -1
 
+# 更新预置点位成功后,更新使能状态
+def _set_enbale_status_by_presetID(robot_id, preset_id):
+    code = 0
+    msg = ''
+    table_name = 'm_robot_point_1'
+
+    try:
+        sql = "UPDATE {} SET point_enable = 0;".format(table_name)
+        db.select_db(sql)
+        try:
+            sql = "UPDATE {} SET point_enable = 1 WHERE id = {} and robot_id={};".format(table_name, preset_id, robot_id)
+            db.select_db(sql)
+            code = 0
+            msg = '操作成功'
+        except Exception as e:
+            code = 3
+            msg = "No robot found in database:{}".format(e)
+    except Exception as e:
+        code = 3
+        msg = "No robot found in database:{}".format(e)
+
+    return code, msg
+    
+
 # 发送机器人移动指令
 # opt_cmd  : 操作码
 # opt_param: 参数
@@ -3389,7 +3413,7 @@ def RobotControl_command():
     sql = "SELECT * FROM {} WHERE id = {}".format(table_name, robot_id)
     iitem = db.select_db(sql)
     if not iitem:
-        req.code = 3, err_msg
+        req.code = 3
         req.msg = "No robot found in database:" + table_name + " with ID:" + robot_id
         return json.dumps(req.__dict__, ensure_ascii=False)
 
@@ -3400,15 +3424,10 @@ def RobotControl_command():
     str_cmd = str(opt_cmd) + ' ' + str(opt_param)
     req.code, req.msg = _sendOptInfoToDev(robot_ip, str_cmd, robot_port)
 
+    # 确认预置点位在列表中的使能状态
+    if 7 == int(opt_cmd):
+        req.code, req.msg = _set_enbale_status_by_presetID(robot_id, opt_param)
+
+
     return json.dumps(req.__dict__, ensure_ascii=False)
-
-
-
-
-
-
-
-
-
-
 
