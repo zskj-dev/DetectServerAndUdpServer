@@ -6,7 +6,7 @@ SERVER_PORT = 8088
 MYSQL_HOST = "127.0.0.1"
 MYSQL_PORT = 3306
 MYSQL_USER = "root"
-MYSQL_PWD = "123456"
+MYSQL_PWD = "1234"
 MYSQL_DB = "d_detectsys"
 
 #redis

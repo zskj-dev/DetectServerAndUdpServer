@@ -17,8 +17,8 @@ from PIL import Image
 import io
 qDetectTask = Queue()
 
-url = 'http://127.0.0.1:5000/api/endpoint'
-
+#url = 'http://127.0.0.1:5000/api/endpoint'
+url='http://192.168.20.2:8001/api/AddVideoAlarm' # 首钢用尚主站服务器IP
 
 
 file_save_path = "./runs/errorgifs"
@@ -282,6 +282,7 @@ if __name__ == "__main__":
     #qDetectTask.put(["bj200301_1_17_16_0_151.gif", 0])
     if not os.path.exists(file_save_path):
         os.makedirs(file_save_path)
+
     while(1):
         file_name = receive_file(file_save_path)
         if (len(file_name) > 3):
