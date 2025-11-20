@@ -3431,3 +3431,246 @@ def RobotControl_command():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+def _get_value_from_request(value, type_needed):
+    if value == None:
+        if type_needed == string:
+            return ''
+        elif type_needed == int:
+            return 0
+        else:
+            return value
+    else:
+        return value
+
+'''
+   31.1 新增表计
+'''
+# 添加表计信息
+# opt_cmd  : 操作码
+# opt_param: 参数
+@realtimealarm.route('/AddMeterInfo', methods=["post"])
+def AddMeternameByPlanInfoID():
+    table_name = 'm_visitationplaninfo_meter'
+    req = ReqResult()
+    planid = request.form.get("planid")
+    planinfoid = request.form.get("planinfoid")
+    name= request.form.get("name")
+
+    # 新增接口至少应该包含任务ID/子任务ID和表计名称
+    if planid == None or planid == '' or planinfoid == None or planinfoid == '' or name == None or name == '':
+        req.code = 1
+        req.msg= "参数不正确: planid, planinfoid and name is needed."
+        return json.dumps(req.__dict__, ensure_ascii=False) 
+
+    current_app.logger.info("recv:plan_id:{}, plan_info_id:{}, name:{}".format(planid, planinfoid, name))
+  
+    select_maxid_sql = 'select max(id) as maxid from {}'.format(table_name)
+    select_maxid_result = db.select_db(select_maxid_sql)
+    id = 0
+    if select_maxid_result[0]['maxid'] is None:
+        id = 1
+    else:
+        id = int(select_maxid_result[0]['maxid']) + 1
+
+    insert_dic = {
+        'id': id,
+        'planid': planid,
+        'planinfoid': planinfoid,
+        'name':name,
+        'type': _get_value_from_request(request.form.get("type"), int),
+        'value_int':_get_value_from_request(request.form.get("value_int"), int),
+        'value_str': _get_value_from_request(request.form.get("value_str"), string),
+        'pos_x':request.form.get("pos_x"),
+        'pos_y':request.form.get("pos_y"),
+        'pos_h':request.form.get("pos_h"),
+        'pos_w':request.form.get("pos_w"),
+        'imgname':request.form.get("imgname"),
+        'create_time': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    try:
+        db.insertData(table_name, insert_dic)
+        req.code = 0
+        req.msg = "操作成功"
+    except Exception as e:
+        req.code = 2
+        req.msg = e
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   31.2 修改表计
+'''
+# 更新表计信息
+# opt_cmd  : 操作码
+# opt_param: 参数
+@realtimealarm.route('/ModifyMeterInfo', methods=["post"])
+def ModifyMeterInfoByID():
+    table_name = 'm_visitationplaninfo_meter'
+    req = ReqResult()
+    id = int(request.form.get("id"))
+    # plan_id = request.form.get("plan_id")
+    # plan_info_id = request.form.get("plan_info_id")
+    name  = request.form.get("name")
+    pos_x = request.form.get("pos_x")
+    pos_y = request.form.get("pos_y")
+    pos_w = request.form.get("pos_w")
+    pos_h = request.form.get("pos_h")
+    value_int = request.form.get("value_int")
+    value_str = request.form.get("value_str")
+    meter_type = request.form.get("type")
+    imgname = request.form.get("imgname")
+
+    current_app.logger.info("Recv modify info:id:{}, name:{}, type:{}, value_int:{},value_str:{}".format(id, name, meter_type,value_int,value_str))
+    current_app.logger.info("                :pos_x:{}, pos_y:{}, pos_w:{}, pos_h:{}".format(pos_x, pos_y, pos_w,pos_h))
+  
+    # 检查输参数合法性
+    if id == None or id == '':
+        req.code = 1
+        req.msg= "参数不正确"
+        return json.dumps(req.__dict__)
+    
+    sql = 'select * from {} where id={}'.format(table_name, id)
+    result = db.select_db(sql)
+    if result == None or result == '':
+        req.code = 2
+        req.msg = 'ID not found in table:' + table_name
+        return json.dumps(req.__dict__, ensure_ascii=False) 
+    
+    try:
+        new_meterinfo_dic = {}  #save all data you wanted as dict.
+
+        if name != None and name != '':
+            new_meterinfo_dic['name'] = name
+        if meter_type != None and meter_type != '':
+            new_meterinfo_dic['type'] = meter_type
+        if value_int != None and value_int != '':
+            new_meterinfo_dic['value_int'] = value_int
+        if value_str != None and value_str != '':
+            new_meterinfo_dic['value_str'] = value_str
+        # mark position
+        if pos_x != None and pos_x != '':
+            new_meterinfo_dic['pos_x'] = pos_x
+        if pos_y != None and pos_y != '':
+            new_meterinfo_dic['pos_y'] = pos_y
+        if pos_w != None and pos_w != '':
+            new_meterinfo_dic['pos_w'] = pos_w
+        if pos_h != None and pos_h != '':
+            new_meterinfo_dic['pos_h'] = pos_h
+        if imgname != None and imgname != '':
+            new_meterinfo_dic['imgname'] = imgname
+
+        wheresql = 'id={};'.format(id)
+        db.updateData(table_name, new_meterinfo_dic, wheresql)
+
+        # sqltatol += "where id = {}".format(id)
+        # db.execute_db(sqltatol)
+        req.code = 0
+        req.msg = "success"
+
+    except Exception as e:
+        req.code = 3
+        req.msg = "Modify failed:" + e
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   31.3 删除表计
+'''
+# 删除表计信息
+# opt_cmd  : 操作码
+# opt_param: 参数
+@realtimealarm.route('/DeleteMeterInfo', methods=["post"])
+def DeleteMeterInfoByID():
+    table_name = 'm_visitationplaninfo_meter'
+    req = ReqResult()
+    id = request.form.get("id")
+  
+    # 检查输参数合法性
+    if id == None or id == '':
+        req.code = 1
+        req.msg= "参数不正确"
+        return json.dumps(req.__dict__)
+    
+    sql = "select * from {} where id={}".format(table_name, id)
+    result = db.select_db(sql)
+    if result == None or result == '':
+        req.code = 2
+        req.msg = 'ID not found in table:' + table_name
+        return json.dumps(req.__dict__, ensure_ascii=False) 
+
+    try:
+        sql = "delete from {} where id={}".format(table_name, id)
+        print("----DeleteModelInfo sql:", sql)
+        db.execute_db(sql)
+        print("----DeleteModelInfo sql over!")
+        req.code = 0
+        req.msg = "success"
+
+    except Exception as e:
+        req.code = 3
+        req.msg = "Delete ID:{} from {} failed:".format(id, table_name) + e
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+'''
+   31.4 根据ID查询对应表计信息
+'''
+@realtimealarm.route('/GetMeterInfoByID', methods=["post"])
+def GetMeterInfoByID():
+    table_name = 'm_visitationplaninfo_meter'
+    req = ReqResult()
+    id = request.form.get("id")
+ 
+    # 检查输参数合法性
+    if id == None or id == '':
+        req.code = 1
+        req.msg= "参数不正确"
+        return json.dumps(req.__dict__)
+    
+    sql = "select * from {} where id={}".format(table_name, id)
+    totaldata = db.select_db(sql)
+    if totaldata == None or totaldata == '':
+        req.code = 2
+        req.msg = 'ID not found in table:' + table_name
+        return json.dumps(req.__dict__, ensure_ascii=False) 
+        
+    json_list = []
+    for i in totaldata:
+        i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   31.5 查询所有表计信息
+'''
+@realtimealarm.route('/GetAllMeterInfoList', methods=["post"])
+def GetAllMeterInfo():
+    table_name = 'm_visitationplaninfo_meter'
+    req = ReqResult()
+
+    sql = "select * from {}".format(table_name)
+    totaldata = db.select_db(sql)
+    if totaldata == None or totaldata == '':
+        req.code = 1
+        req.msg = 'ID not found in table:' + table_name
+        return json.dumps(req.__dict__, ensure_ascii=False) 
+    
+    json_list = []
+    for i in totaldata:
+        i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
