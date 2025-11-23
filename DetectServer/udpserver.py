@@ -948,7 +948,29 @@ def VisitationPlanThread(mqDetectTask):
     print("--VisitationPlan Thread Start!--")
     # preVisitationPlanTime = datetime.now()
     sqltotal = "select * from m_visitationplan"
+    sqlcheckifrunnow = "select * from m_visitationplan where isrunnow = 1"
     while True:
+        #新增判断任务中是否有需要立即执行的任务
+        runnowdata = db.select_db(sqlcheckifrunnow)
+        if len(runnowdata) <= 0:
+            print("runnow plan not found, go as normal.")
+        else:
+            for index in range(len(runnowdata)):
+                id = runnowdata[index]["id"]
+                taskplanname    = runnowdata[index]["taskplanname"]
+                taskplanclass   = runnowdata[index]["taskplanclass"]    # 立即执行操作，不再判断类型
+                taskplantype    = runnowdata[index]["taskplantype"]     # type中不在包含3（立即执行）
+                taskplanstate   = runnowdata[index]["taskplanstate"]    # 立即执行操作，不再判断状态
+                print(f"runnow plan starting to put to the MQ, id={id}, taskplanname={taskplanname}.")
+                VisitationPlanWorker(id, mqDetectTask)
+                # 执行完，更新isrunnow标记位为0
+                isrunnow_dic                = {}
+                isrunnow_dic['isrunnow']    = 0
+                wheresql                    = 'id={};'.format(id)
+                db.updateData("m_visitationplan", isrunnow_dic, wheresql)
+            print("runnow plan all put done, go back.")
+            continue
+
         totaldata = db.select_db(sqltotal)
         if len(totaldata) <= 0:
             time.sleep(10)
@@ -1036,15 +1058,15 @@ def VisitationPlanThread(mqDetectTask):
 
             # --------- 立即执行 start----------
             if taskplantype == 3:
-                print("====debug:entry taskplantype == 3")
+                print(f"[Attention]This taskplantype {taskplantype} has been removed from current version.")
                 # if predatetime1 is None:  # 如果不为空，则执行过 就不在执行
-                print('taskplancount:',taskplancount)
-                if taskplancount == 0:
-                    VisitationPlanWorker(id, mqDetectTask)
-                    set_visitation_plan_count(id, taskplancount + 1)
-                else:
-                    pass
-                    print("没有执行立即任务")
+                # print('taskplancount:',taskplancount)
+                # if taskplancount == 0:
+                #     VisitationPlanWorker(id, mqDetectTask)
+                #     set_visitation_plan_count(id, taskplancount + 1)
+                # else:
+                #     pass
+                #     print("没有执行立即任务")
 
             # --------- 立即执行 end----------
 
