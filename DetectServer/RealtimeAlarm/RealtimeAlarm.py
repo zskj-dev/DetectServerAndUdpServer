@@ -3346,7 +3346,7 @@ def _command_input_parese_print(opt_cmd, opt_pos):
 def _set_enbale_status_by_presetID(robot_id, preset_id):
     code = 0
     msg = ''
-    table_name = 'm_robot_point_1'
+    table_name = 'm_robot_point'
 
     try:
         sql = "UPDATE {} SET point_enable = 0;".format(table_name)
@@ -3443,11 +3443,19 @@ def _get_value_from_request(value, type_needed):
         return value
 
 '''
-   31.1 新增表计
+   31.1 新增一条表计内容
 '''
 # 添加表计信息
-# opt_cmd  : 操作码
-# opt_param: 参数
+# INPUT:
+#            planid     任务ID
+#            planinfoid 子任务ID
+#            name       表计名称
+#            type       表计类型：1:LED_红,2:LED_绿;3:LED_白; 4:LED_黄; 5:旋钮开关;6:压板开关;7:表针;其他:待添加"
+#            pos_x      由用户输入的横坐标x
+#            pos_y      由用户输入的横坐标y
+#            pos_w      由用户输入的距离(x,y)的宽度
+#            pos_h      由用户输入的距离(x,y)的高度
+
 @realtimealarm.route('/AddMeterInfo', methods=["post"])
 def AddMeternameByPlanInfoID():
     table_name = 'm_visitationplaninfo_meter'
@@ -3456,10 +3464,21 @@ def AddMeternameByPlanInfoID():
     planinfoid = request.form.get("planinfoid")
     name= request.form.get("name")
 
+    pos_x = request.form.get("pos_x")
+    pos_y = request.form.get("pos_y")
+    pos_h = request.form.get("pos_h")
+    pos_w = request.form.get("pos_w")
+
     # 新增接口至少应该包含任务ID/子任务ID和表计名称
     if planid == None or planid == '' or planinfoid == None or planinfoid == '' or name == None or name == '':
         req.code = 1
         req.msg= "参数不正确: planid, planinfoid and name is needed."
+        return json.dumps(req.__dict__, ensure_ascii=False) 
+
+    if pos_x == None or pos_x == '' or pos_y == None or pos_y == '' \
+        or pos_h == None or pos_h == '' or pos_w == None or pos_w == '':
+        req.code = 2
+        req.msg= "参数缺失: postion info (x,y),(w,h) is needed."
         return json.dumps(req.__dict__, ensure_ascii=False) 
 
     current_app.logger.info("recv:plan_id:{}, plan_info_id:{}, name:{}".format(planid, planinfoid, name))
@@ -3477,13 +3496,13 @@ def AddMeternameByPlanInfoID():
         'planid': planid,
         'planinfoid': planinfoid,
         'name':name,
-        'type': _get_value_from_request(request.form.get("type"), int),
-        'value_int':_get_value_from_request(request.form.get("value_int"), int),
-        'value_str': _get_value_from_request(request.form.get("value_str"), string),
-        'pos_x':request.form.get("pos_x"),
-        'pos_y':request.form.get("pos_y"),
-        'pos_h':request.form.get("pos_h"),
-        'pos_w':request.form.get("pos_w"),
+        'type': 0,
+        'value_int': 0,
+        'value_str': '',
+        'pos_x':pos_x,
+        'pos_y':pos_y,
+        'pos_h':pos_h,
+        'pos_w':pos_w,
         'imgname':request.form.get("imgname"),
         'create_time': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
@@ -3500,11 +3519,21 @@ def AddMeternameByPlanInfoID():
 
 
 '''
-   31.2 修改表计
+   31.2 修改/更新表计
 '''
+
 # 更新表计信息
-# opt_cmd  : 操作码
-# opt_param: 参数
+#  INPUT    :
+#  id           列表唯一识别号ID(必选项)
+#  name         表计名称        (可选)前端写入
+#  type         表计类别        (可选)暂不使用
+#  pos_x        位置坐标x       (可选)前端写入
+#  pos_y        位置坐标y       (可选)前端写入
+#  pos_w        位置坐标w       (可选)前端写入
+#  pos_h        位置坐标h       (可选)前端写入
+#  value_int    整型表计读数    (可选)后端识别后写入
+#  value_str    字符表计读数    (可选)后端识别后写入
+#  imgname      表计采集图片    (可选)后端写入
 @realtimealarm.route('/ModifyMeterInfo', methods=["post"])
 def ModifyMeterInfoByID():
     table_name = 'm_visitationplaninfo_meter'
@@ -3580,8 +3609,8 @@ def ModifyMeterInfoByID():
    31.3 删除表计
 '''
 # 删除表计信息
-# opt_cmd  : 操作码
-# opt_param: 参数
+#  INPUT    :
+#  id           列表唯一识别号ID
 @realtimealarm.route('/DeleteMeterInfo', methods=["post"])
 def DeleteMeterInfoByID():
     table_name = 'm_visitationplaninfo_meter'
@@ -3661,6 +3690,41 @@ def GetAllMeterInfo():
     totaldata = db.select_db(sql)
     if totaldata == None or totaldata == '':
         req.code = 1
+        req.msg = 'ID not found in table:' + table_name
+        return json.dumps(req.__dict__, ensure_ascii=False) 
+    
+    json_list = []
+    for i in totaldata:
+        i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+'''
+   31.6 根据计划子任务ID,获取该子任务下的所有表计信息
+    #  INPUT:
+    #  planinfoid:子任务ID号
+'''
+@realtimealarm.route('/GetMeterInfoListByPlanInfoID', methods=["post"])
+def GetMeterInfoByPlanInfoID():
+    table_name = 'm_visitationplaninfo_meter'
+    req = ReqResult()
+    planinfoid = request.form.get("planinfoid")
+
+    # 检查输参数合法性
+    if planinfoid == None or planinfoid == '':
+        req.code = 1
+        req.msg= "参数缺失:planinfoid"
+        return json.dumps(req.__dict__)
+    
+    sql = "select * from {} where planinfoid={}".format(table_name, planinfoid)
+    totaldata = db.select_db(sql)
+    if totaldata == None or totaldata == '':
+        req.code = 2
         req.msg = 'ID not found in table:' + table_name
         return json.dumps(req.__dict__, ensure_ascii=False) 
     
