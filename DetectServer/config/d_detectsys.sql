@@ -11,7 +11,7 @@
  Target Server Version : 80042 (8.0.42)
  File Encoding         : 65001
 
- Date: 09/11/2025 20:18:17
+ Date: 01/12/2025 12:04:57
 */
 
 SET NAMES utf8mb4;
@@ -209,7 +209,8 @@ INSERT INTO `m_camera` VALUES (143, '雁栖湖站35kV设备区中2', 33, 4, 186,
 -- ----------------------------
 DROP TABLE IF EXISTS `m_camera_point`;
 CREATE TABLE `m_camera_point`  (
-  `point_id` int NOT NULL AUTO_INCREMENT COMMENT '点位ID',
+  `point_id` int NOT NULL AUTO_INCREMENT COMMENT '表项ID,唯一识别号',
+  `preset_id` int NOT NULL COMMENT '预置点位编号',
   `camera_id` int NOT NULL COMMENT '摄像头ID',
   `point_info` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '点位信息',
   `point_type` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '点位类型',
@@ -217,44 +218,39 @@ CREATE TABLE `m_camera_point`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `robot_point_id` int NOT NULL COMMENT '关联的机器人点位ID',
   PRIMARY KEY (`point_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 34 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '摄像头点位信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 29 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '摄像头点位信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_camera_point
 -- ----------------------------
-INSERT INTO `m_camera_point` VALUES (1, 82, '202柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
-INSERT INTO `m_camera_point` VALUES (2, 82, '49柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
-INSERT INTO `m_camera_point` VALUES (3, 82, '245柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
-INSERT INTO `m_camera_point` VALUES (4, 82, '234-4柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
-INSERT INTO `m_camera_point` VALUES (5, 82, '245-5柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
-INSERT INTO `m_camera_point` VALUES (6, 82, '234柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
-INSERT INTO `m_camera_point` VALUES (7, 82, '231柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 2);
-INSERT INTO `m_camera_point` VALUES (8, 82, '218柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 2);
-INSERT INTO `m_camera_point` VALUES (9, 82, '232柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 3);
-INSERT INTO `m_camera_point` VALUES (10, 82, '217柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 3);
-INSERT INTO `m_camera_point` VALUES (11, 82, '233柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 4);
-INSERT INTO `m_camera_point` VALUES (12, 82, '216柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 4);
-INSERT INTO `m_camera_point` VALUES (13, 82, '235柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 5);
-INSERT INTO `m_camera_point` VALUES (14, 82, '215柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 5);
-INSERT INTO `m_camera_point` VALUES (15, 82, '59柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 6);
-INSERT INTO `m_camera_point` VALUES (16, 82, '39柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 6);
-INSERT INTO `m_camera_point` VALUES (17, 82, '236柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 6);
-INSERT INTO `m_camera_point` VALUES (18, 82, '214柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 6);
-INSERT INTO `m_camera_point` VALUES (19, 82, '237柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 7);
-INSERT INTO `m_camera_point` VALUES (20, 82, '213柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 7);
-INSERT INTO `m_camera_point` VALUES (21, 82, '238柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 8);
-INSERT INTO `m_camera_point` VALUES (22, 82, '212柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 8);
-INSERT INTO `m_camera_point` VALUES (23, 82, '239柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 9);
-INSERT INTO `m_camera_point` VALUES (24, 82, '211柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 9);
-INSERT INTO `m_camera_point` VALUES (25, 82, '203柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 10);
-INSERT INTO `m_camera_point` VALUES (26, 82, '201柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 10);
-INSERT INTO `m_camera_point` VALUES (27, 82, '50柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 11);
-INSERT INTO `m_camera_point` VALUES (28, 82, '30柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 11);
-INSERT INTO `m_camera_point` VALUES (29, 30, '站内所内屏', 'Ⅱ类', '球机', '2025-11-06 20:03:11', 11);
-INSERT INTO `m_camera_point` VALUES (30, 30, '站内所内屏', 'Ⅱ类', '球机', '2025-11-06 20:12:42', 12);
-INSERT INTO `m_camera_point` VALUES (31, 30, '站内所内屏', 'Ⅱ类', '球机', '2025-11-06 20:13:58', 12);
-INSERT INTO `m_camera_point` VALUES (32, 30, '站内所内屏', 'Ⅱ类', '球机', '2025-11-06 20:16:13', 12);
-INSERT INTO `m_camera_point` VALUES (33, 31, '站内所内屏', 'Ⅱ类', '球机', '2025-11-06 20:18:51', 12);
+INSERT INTO `m_camera_point` VALUES (1, 1, 82, '202柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
+INSERT INTO `m_camera_point` VALUES (2, 2, 82, '49柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
+INSERT INTO `m_camera_point` VALUES (3, 3, 82, '245柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
+INSERT INTO `m_camera_point` VALUES (4, 4, 82, '234-4柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
+INSERT INTO `m_camera_point` VALUES (5, 5, 82, '245-5柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
+INSERT INTO `m_camera_point` VALUES (6, 6, 82, '234柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 1);
+INSERT INTO `m_camera_point` VALUES (7, 7, 82, '231柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 2);
+INSERT INTO `m_camera_point` VALUES (8, 8, 82, '218柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 2);
+INSERT INTO `m_camera_point` VALUES (9, 9, 82, '232柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 3);
+INSERT INTO `m_camera_point` VALUES (10, 10, 82, '217柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 3);
+INSERT INTO `m_camera_point` VALUES (11, 11, 82, '233柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 4);
+INSERT INTO `m_camera_point` VALUES (12, 12, 82, '216柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 4);
+INSERT INTO `m_camera_point` VALUES (13, 13, 82, '235柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 5);
+INSERT INTO `m_camera_point` VALUES (14, 14, 82, '215柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 5);
+INSERT INTO `m_camera_point` VALUES (15, 15, 82, '59柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 6);
+INSERT INTO `m_camera_point` VALUES (16, 16, 82, '39柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 6);
+INSERT INTO `m_camera_point` VALUES (17, 17, 82, '236柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 6);
+INSERT INTO `m_camera_point` VALUES (18, 18, 82, '214柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 6);
+INSERT INTO `m_camera_point` VALUES (19, 19, 82, '237柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 7);
+INSERT INTO `m_camera_point` VALUES (20, 20, 82, '213柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 7);
+INSERT INTO `m_camera_point` VALUES (21, 21, 82, '238柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 8);
+INSERT INTO `m_camera_point` VALUES (22, 22, 82, '212柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 8);
+INSERT INTO `m_camera_point` VALUES (23, 23, 82, '239柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 9);
+INSERT INTO `m_camera_point` VALUES (24, 24, 82, '211柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 9);
+INSERT INTO `m_camera_point` VALUES (25, 25, 82, '203柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 10);
+INSERT INTO `m_camera_point` VALUES (26, 26, 82, '201柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 10);
+INSERT INTO `m_camera_point` VALUES (27, 27, 82, '50柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 11);
+INSERT INTO `m_camera_point` VALUES (28, 28, 82, '30柜', 'Ⅱ类', '球机', '2025-07-02 13:51:00', 11);
 
 -- ----------------------------
 -- Table structure for m_devappstate
@@ -606,7 +602,7 @@ CREATE TABLE `m_devrunconfig`  (
   `ThredMultipleThree` float NOT NULL,
   `runenable` float NOT NULL COMMENT '是否运行的开关',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 84 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '设备运行配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 84 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '设备运行配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_devrunconfig
@@ -864,10 +860,10 @@ CREATE TABLE `m_errorinfo`  (
 -- ----------------------------
 -- Records of m_errorinfo
 -- ----------------------------
-INSERT INTO `m_errorinfo` VALUES (00000000000000000137, 'bj200331', '2025-04-21 18:28:31', '192.168.0.168', 8000, 'admin', 'zskj1225', 33, '', 2, 0, 0, '0', 1, 1, '1.gif', 0, 1);
-INSERT INTO `m_errorinfo` VALUES (00000000000000000138, 'bj200331', '2025-04-21 18:28:31', '192.168.0.168', 8000, 'admin', 'zskj1225', 33, '', 2, 0, 0, '0', 1, 1, '1.gif', 0, 1);
-INSERT INTO `m_errorinfo` VALUES (00000000000000000139, 'bj200331', '2025-04-29 10:39:59', '192.168.0.168', 8000, 'admin', 'zskj1225', 33, '', 2, 0, 0, '0', 1, 1, '1.gif', 0, 1);
-INSERT INTO `m_errorinfo` VALUES (00000000000000000140, 'bj200331', '2025-06-09 17:00:13', '192.168.0.168', 8000, 'admin', 'zskj1225', 33, NULL, 2, 0, 0, '0', 1, 1, '1.gif', 0, 1);
+INSERT INTO `m_errorinfo` VALUES (00000000000000000137, 'bj200331', '2025-04-21 18:28:31', '192.168.0.168', 8000, 'admin', 'zskj1225', 33, '', 2, 0, 0, '0', 3, 1, '1.gif', 0, 1);
+INSERT INTO `m_errorinfo` VALUES (00000000000000000138, 'bj200331', '2025-04-21 18:28:31', '192.168.0.168', 8000, 'admin', 'zskj1225', 33, '', 2, 0, 0, '0', 3, 1, '1.gif', 0, 1);
+INSERT INTO `m_errorinfo` VALUES (00000000000000000139, 'bj200331', '2025-04-29 10:39:59', '192.168.0.168', 8000, 'admin', 'zskj1225', 33, '', 2, 0, 0, '0', 3, 1, '1.gif', 0, 1);
+INSERT INTO `m_errorinfo` VALUES (00000000000000000140, 'bj200331', '2025-06-09 17:00:13', '192.168.0.168', 8000, 'admin', 'zskj1225', 33, NULL, 2, 0, 0, '0', 3, 1, '1.gif', 0, 1);
 INSERT INTO `m_errorinfo` VALUES (00000000000000000141, '', '2025-07-17 18:43:08', '0', 0, '0', '0', 0, '2e052298-2d4b-4ba9-b3eb-50089d910503.jpg', 1, 0, 0, '0', 1, 1, '', 0, 1);
 INSERT INTO `m_errorinfo` VALUES (00000000000000000142, '', '2025-07-17 18:51:34', '0', 0, '0', '0', 0, 'd2fa68b3-d3e1-4338-95c7-8b291970b516.jpg', 1, 0, 0, '0', 1, 1, '', 0, 1);
 INSERT INTO `m_errorinfo` VALUES (00000000000000000143, '', '2025-07-21 11:37:18', '192.168.0.168', 8000, 'admin', 'zskj1225', 35, '9987063a-f791-48f4-afc8-7c25e04c1fbb.jpg', 1, 0, 0, '0', 1, 1, '', 0, 1);
@@ -1422,7 +1418,7 @@ CREATE TABLE `m_model`  (
 -- ----------------------------
 -- Records of m_model
 -- ----------------------------
-INSERT INTO `m_model` VALUES (1, 'best.pt', 1);
+INSERT INTO `m_model` VALUES (1, 'YiChangJianCe.pt', 1);
 INSERT INTO `m_model` VALUES (2, '1.pt', 0);
 INSERT INTO `m_model` VALUES (4, '222222222222.pt', 0);
 
@@ -1446,6 +1442,8 @@ CREATE TABLE `m_modelinfo`  (
 INSERT INTO `m_modelinfo` VALUES (1, 1, 1, '没带安全帽', 3, NULL);
 INSERT INTO `m_modelinfo` VALUES (2, 1, 0, '带安全帽', 0, NULL);
 INSERT INTO `m_modelinfo` VALUES (3, 1, 2, '火', 4, NULL);
+INSERT INTO `m_modelinfo` VALUES (4, 1, 3, '小动物_老鼠', 3, 'Null');
+INSERT INTO `m_modelinfo` VALUES (5, 1, 4, '小动物_蛇', 3, 'Null');
 
 -- ----------------------------
 -- Table structure for m_overhaularea
@@ -1506,12 +1504,12 @@ CREATE TABLE `m_robot`  (
   `optipaddr` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT 'None' COMMENT '操作IP地址',
   `optserial` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT 'None' COMMENT '操作序列号',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '机器人基本信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '机器人基本信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_robot
 -- ----------------------------
-INSERT INTO `m_robot` VALUES (1, '会展中心', '127.0.0.1', 8081, 1, 1, 28, 28, 33, 1, 186, NULL, NULL, NULL, '2025-11-06 11:31:00', '192.168.1. 240', NULL);
+INSERT INTO `m_robot` VALUES (1, '会展中心', '127.0.0.1', 8082, 1, 1, 28, 28, 33, 1, 186, NULL, NULL, NULL, '2025-11-06 11:31:00', '192.168.1.240', NULL);
 
 -- ----------------------------
 -- Table structure for m_robot_point
@@ -1526,7 +1524,7 @@ CREATE TABLE `m_robot_point`  (
   `pos_y` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '点位对应的纵坐标的十六进制值',
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '机器人点位信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '机器人点位信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_robot_point
@@ -1759,17 +1757,18 @@ CREATE TABLE `m_visitationplan`  (
   `predatetime` datetime NULL DEFAULT NULL,
   `createtime` datetime NULL DEFAULT NULL,
   `taskplancount` int(11) UNSIGNED ZEROFILL NULL DEFAULT 00000000000,
+  `isrunnow` int(1) UNSIGNED ZEROFILL NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_visitationplan
 -- ----------------------------
-INSERT INTO `m_visitationplan` VALUES (1, '11112', 1, 1, 0, 0, 1, 0, '6a230367-e277-46b8-947e-b057e0ed0d20', 100, '2025-07-17 14:32:59', '2025-05-15 21:40:27', 00000000000);
-INSERT INTO `m_visitationplan` VALUES (2, '测试2', 0, 1, 0, 1, 1, 0, '', 0, '2025-06-01 13:56:15', '2025-06-01 13:56:15', 00000000000);
-INSERT INTO `m_visitationplan` VALUES (24, '20251031_1158', 0, 3, 0, 0, 0, 0, '', 0, '2025-10-31 11:58:39', '2025-10-31 11:58:39', 00000000000);
-INSERT INTO `m_visitationplan` VALUES (26, '1231234', 1, 0, 1, 20, 11, 0, '', 0, '2025-11-09 20:09:12', '2025-11-09 20:09:12', 00000000000);
-INSERT INTO `m_visitationplan` VALUES (27, '1231234', 0, 0, 1, 20, 17, 0, '', 0, '2025-11-09 20:11:29', '2025-11-09 20:11:29', 00000000000);
+INSERT INTO `m_visitationplan` VALUES (1, '11112', 1, 1, 0, 0, 1, 0, '6a230367-e277-46b8-947e-b057e0ed0d20', 100, '2025-07-17 14:32:59', '2025-05-15 21:40:27', 00000000000, 0);
+INSERT INTO `m_visitationplan` VALUES (2, '测试2', 0, 1, 0, 1, 1, 0, '', 0, '2025-06-01 13:56:15', '2025-06-01 13:56:15', 00000000000, 0);
+INSERT INTO `m_visitationplan` VALUES (24, '20251031_1158', 0, 3, 0, 0, 0, 0, '', 0, '2025-10-31 11:58:39', '2025-10-31 11:58:39', 00000000000, 0);
+INSERT INTO `m_visitationplan` VALUES (26, '1231234', 1, 0, 1, 20, 11, 0, '', 0, '2025-11-09 20:09:12', '2025-11-09 20:09:12', 00000000000, 0);
+INSERT INTO `m_visitationplan` VALUES (27, '1231234', 0, 0, 1, 20, 17, 0, '', 0, '2025-11-09 20:11:29', '2025-11-09 20:11:29', 00000000000, 0);
 
 -- ----------------------------
 -- Table structure for m_visitationplanhistory
@@ -16440,17 +16439,27 @@ INSERT INTO `m_visitationplaninfo` VALUES (36, 83, 1, 0, '', 0, 27, 0);
 -- ----------------------------
 DROP TABLE IF EXISTS `m_visitationplaninfo_meter`;
 CREATE TABLE `m_visitationplaninfo_meter`  (
-  `id` int NOT NULL COMMENT '序列号ID',
-  `planinfoId` int NOT NULL COMMENT '计划任务ID,关联m_visitationplaninfo表的主键ID',
-  `metername` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '表计名称'
-) ENGINE = InnoDB CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '创建任务时，子任务为表计读数时的表计名称管理' ROW_FORMAT = Dynamic;
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '序列号ID',
+  `planid` int NOT NULL COMMENT '计划任务ID,关联m_visitationplan表的主键ID',
+  `planinfoid` int NOT NULL COMMENT '计划子任务ID,关联m_visitationplaninfo表的主键ID',
+  `name` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计名称',
+  `type` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计类型:1:LED_红,2:LED_绿;3:LED_白; 4:LED_黄; 5:旋钮开关;6:压板开关;7:表针;其他:待添加',
+  `value_int` int NULL DEFAULT NULL COMMENT '存储整型表计值',
+  `value_str` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '存储字符串型表计值',
+  `pos_x` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置横坐标',
+  `pos_y` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置纵坐标',
+  `pos_h` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置高度',
+  `pos_w` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置宽度',
+  `imgname` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '识别后得到的表计对应图片名',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '创建任务时，子任务为表计读数时的表计名称管理' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of m_visitationplaninfo_meter
 -- ----------------------------
-INSERT INTO `m_visitationplaninfo_meter` VALUES (1, 0, '1号主控室');
-INSERT INTO `m_visitationplaninfo_meter` VALUES (2, 1, '2号主控室');
-INSERT INTO `m_visitationplaninfo_meter` VALUES (3, 32, '202510301049');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (1, 1, 1, '1号主控室', '1', 24, '24', '0', '1', '2', '3', NULL, '2025-11-19 16:10:00');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (2, 1, 2, '2号主控室', '1', 50, '50', '0', '1', '2', '3', NULL, '2025-11-19 16:10:00');
 
 -- ----------------------------
 -- Table structure for m_visitationplaninfohistory
@@ -37220,5 +37229,11 @@ CREATE ALGORITHM = UNDEFINED SQL SECURITY DEFINER VIEW `v_errlist` AS select `aa
 -- ----------------------------
 DROP VIEW IF EXISTS `v_historyalarm`;
 CREATE ALGORITHM = UNDEFINED SQL SECURITY DEFINER VIEW `v_historyalarm` AS select `aa`.`task_id` AS `id`,`aa`.`sts` AS `sts`,`cc`.`stationid` AS `stationid`,`aa`.`camera_id` AS `camid`,`aa`.`create_time` AS `updatetime`,`bb`.`camera_name` AS `cameraname`,`cc`.`roomname` AS `roomname`,`dd`.`stationname` AS `stationname`,(case when (`aa`.`devid` = '') then '0' else '1' end) AS `type`,`aa`.`opsts` AS `opsts`,`aa`.`errortype` AS `errortype` from (((`m_task` `aa` left join `m_camera` `bb` on(((`aa`.`camera_id` = `bb`.`camera_id`) and (`aa`.`opsts` = 20)))) left join `m_stationroom` `cc` on((`bb`.`roomid` = `cc`.`id`))) left join `m_stationinfo` `dd` on((`cc`.`stationid` = `dd`.`id`))) order by `aa`.`task_id` desc;
+
+-- ----------------------------
+-- View structure for v_overhaularea
+-- ----------------------------
+DROP VIEW IF EXISTS `v_overhaularea`;
+CREATE ALGORITHM = UNDEFINED SQL SECURITY DEFINER VIEW `v_overhaularea` AS with recursive `split_rooms` as (select `m_overhaularea`.`id` AS `id`,`j`.`room_id` AS `room_id`,`m_overhaularea`.`starttime` AS `starttime`,`m_overhaularea`.`endtime` AS `endtime` from (`m_overhaularea` join json_table(concat('["',replace(`m_overhaularea`.`roomids`,',','","'),'"]'), '$[*]' columns (`room_id` varchar(50) character set utf8mb4 path '$')) `j`)), `sorted_maintain` as (select `split_rooms`.`room_id` AS `room_id`,`split_rooms`.`starttime` AS `starttime`,`split_rooms`.`endtime` AS `endtime`,row_number() OVER (PARTITION BY `split_rooms`.`room_id` ORDER BY `split_rooms`.`starttime` )  AS `rn` from `split_rooms`), `merged_maintain` as (select `sorted_maintain`.`room_id` AS `room_id`,`sorted_maintain`.`starttime` AS `starttime`,`sorted_maintain`.`endtime` AS `endtime`,`sorted_maintain`.`rn` AS `rn` from `sorted_maintain` where (`sorted_maintain`.`rn` = 1) union all select `m`.`room_id` AS `room_id`,least(`m`.`starttime`,`s`.`starttime`) AS `LEAST(m.starttime, s.starttime)`,greatest(`m`.`endtime`,`s`.`endtime`) AS `GREATEST(m.endtime, s.endtime)`,`s`.`rn` AS `rn` from (`merged_maintain` `m` join `sorted_maintain` `s` on(((`m`.`room_id` = `s`.`room_id`) and (`s`.`rn` = (`m`.`rn` + 1)) and (`s`.`starttime` <= `m`.`endtime`))))) select `t`.`room_id` AS `room_id`,`t`.`starttime` AS `merged_start`,`t`.`endtime` AS `merged_end` from (select `merged_maintain`.`room_id` AS `room_id`,`merged_maintain`.`starttime` AS `starttime`,`merged_maintain`.`endtime` AS `endtime`,row_number() OVER (PARTITION BY `merged_maintain`.`room_id` ORDER BY `merged_maintain`.`rn` desc )  AS `rn_desc` from `merged_maintain`) `t` where (`t`.`rn_desc` = 1) order by `t`.`room_id`,`t`.`starttime`;
 
 SET FOREIGN_KEY_CHECKS = 1;
