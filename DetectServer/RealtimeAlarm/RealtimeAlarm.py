@@ -3523,7 +3523,15 @@ def AddMeterPresetInfo():
 def ModifyMeterPresetInfoByID():
     table_name = 'm_metername_point'
     req = ReqResult()
-    id = int(request.form.get("id"))
+
+    try:
+        # 检查输参数合法性
+        id = int(request.form.get("id"))
+    except (TypeError, ValueError):
+        req.code = 1
+        req.msg = "参数不正确: id must be needed and type is integer."
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
     name  = request.form.get("name")
     pos_x = request.form.get("pos_x")
     pos_y = request.form.get("pos_y")
@@ -3533,19 +3541,12 @@ def ModifyMeterPresetInfoByID():
 
     current_app.logger.info("Recv modify info:id:{}, name:{}, type:{}".format(id, name, meter_type))
     current_app.logger.info("                :pos_x:{}, pos_y:{}, pos_w:{}, pos_h:{}".format(pos_x, pos_y, pos_w,pos_h))
-  
-    # 检查输参数合法性
-    if id == None or id == '':
-        req.code = 1
-        req.msg= "参数不正确"
-        return json.dumps(req.__dict__)
     
-    sql = 'select * from {} where id={}'.format(table_name, id)
-    result = db.select_db(sql)
-    if len(result) <= 0:
+
+    if not db.checkIdExist(table_name, id):
         req.code = 2
         req.msg = 'ID:{} not found in table:{}'.format(id, table_name)
-        return json.dumps(req.__dict__, ensure_ascii=False) 
+        return json.dumps(req.__dict__, ensure_ascii=False)
     
     try:
         new_meterinfo_dic = {}  #save all data you wanted as dict.
@@ -3596,12 +3597,10 @@ def DeleteMeterPresetInfoByID():
         req.msg= "参数不正确"
         return json.dumps(req.__dict__)
     
-    sql = "select * from {} where id={}".format(table_name, id)
-    result = db.select_db(sql)
-    if len(result) <= 0:
+    if not db.checkIdExist(table_name, id):
         req.code = 2
         req.msg = 'ID:{} not found in table:{}'.format(id, table_name)
-        return json.dumps(req.__dict__, ensure_ascii=False) 
+        return json.dumps(req.__dict__, ensure_ascii=False)
 
     try:
         sql = "delete from {} where id={}".format(table_name, id)
@@ -3686,28 +3685,39 @@ def GetAllMeterPresetInfo():
 def AddMeternameByPlanInfoID():
     table_name      = 'm_visitationplaninfo_meter'
     req             = ReqResult()
-    planid          = int(request.form.get("planid"))
-    planinfoid      = int(request.form.get("planinfoid"))
-    station_id      = int(request.form.get("station_id"))
-    stationroom_id  = int(request.form.get("stationroom_id"))
-    camera_id       = int(request.form.get("camera_id"))
-    metername_id    = int(request.form.get("metername_id"))
 
-    # 新增接口至少应该包含任务ID/子任务ID和表计名称
-    if planid == None or planid == '' or planinfoid == None or planinfoid == '' \
-        or metername_id == None or metername_id == '' \
-        or station_id == None or station_id == '' or stationroom_id == None or stationroom_id == '' \
-        or camera_id == None or camera_id == '':
+    try:
+        # 新增接口至少应该包含任务ID/子任务ID和表计名称ID/点位ID/摄像头ID/变电站ID/机房ID
+        planid          = int(request.form.get("planid"))
+        planinfoid      = int(request.form.get("planinfoid"))
+        station_id      = int(request.form.get("station_id"))
+        stationroom_id  = int(request.form.get("stationroom_id"))
+        camera_id       = int(request.form.get("camera_id"))
+        metername_id    = int(request.form.get("metername_id"))
+    except Exception as e:
         req.code = 1
-        req.msg= "参数不正确: planid, planinfoid and nameid is needed."
+        req.msg= "缺少参数: planid / planinfoid /  station_id / stationroom_id / camera_id / metername_id is needed."
         return json.dumps(req.__dict__, ensure_ascii=False)
 
     current_app.logger.info("recv:plan_id:{}, plan_info_id:{}, meternameid:{}".format(planid, planinfoid, metername_id))
 
-    # 检查name id入参合理性
-    sql_check_nameid = 'select * from m_metername_point where id={}'.format(metername_id)
-    result_check_nameid = db.select_db(sql_check_nameid)
-    if len(result_check_nameid) <= 0:
+    # 确认各ID在对应表中存在
+    if not db.checkIdExist('m_stationinfo', station_id):
+        req.code = 2
+        req.msg = 'station_id:{} not found in table:{}'.format(station_id, 'm_stationinfo')
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    
+    if not db.checkIdExist('m_stationroom', stationroom_id):
+        req.code = 2
+        req.msg = 'stationroom_id:{} not found in table:{}'.format(stationroom_id, 'm_stationroom')
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    if not db.checkIdExist('m_camera', camera_id, "camera_id"):
+        req.code = 2
+        req.msg = 'camera_id:{} not found in table:{}'.format(camera_id, 'm_camera')
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    if not db.checkIdExist('m_metername_point', metername_id):
         req.code = 2
         req.msg = 'metername_id:{} not found in table:{}'.format(metername_id, 'm_metername_point')
         return json.dumps(req.__dict__, ensure_ascii=False)
@@ -3760,12 +3770,10 @@ def DeleteMeterInfoByID():
         req.msg= "参数不正确"
         return json.dumps(req.__dict__)
     
-    sql = "select * from {} where id={}".format(table_name, id)
-    result = db.select_db(sql)
-    if len(result) <= 0:
+    if not db.checkIdExist(table_name, id):
         req.code = 2
-        req.msg = 'ID:{} not found in table:{}'.format(id, table_name)
-        return json.dumps(req.__dict__, ensure_ascii=False) 
+        req.msg = 'metername_id:{} not found in table:{}'.format(id, 'm_metername_point')
+        return json.dumps(req.__dict__, ensure_ascii=False)
 
     try:
         sql = "delete from {} where id={}".format(table_name, id)
@@ -3788,31 +3796,28 @@ def DeleteMeterInfoByID():
 @realtimealarm.route('/ModifyMeterInfo', methods=["post"])
 def ModifyMeterInfoByID():
     table_name      = 'm_visitationplaninfo_meter'
-    
+
     req             = ReqResult()
-    id              = int(request.form.get("id"))
-    station_id      = int(request.form.get("station_id"))
-    stationroom_id  = int(request.form.get("stationroom_id"))
-    camera_id       = int(request.form.get("camera_id"))
-    metername_id    = int(request.form.get("metername_id"))
+    id              = request.form.get("id")
+    station_id      = request.form.get("station_id")
+    stationroom_id  = request.form.get("stationroom_id")
+    camera_id       = request.form.get("camera_id")
+    metername_id    = request.form.get("metername_id")
 
     value_int   = request.form.get("value_int")
     value_str   = request.form.get("value_str")
     meter_type  = request.form.get("type")
     imgname     = request.form.get("imgname")
 
-    current_app.logger.info("Recv modify info:id:{}, metername_id:{}, type:{}, value_int:{},value_str:{}".format(id, name, meter_type,value_int,value_str))
-    current_app.logger.info("                :pos_x:{}, pos_y:{}, pos_w:{}, pos_h:{}".format(pos_x, pos_y, pos_w,pos_h))
-  
+    current_app.logger.info("Recv modify info:id:{}, metername_id:{}, type:{}, value_int:{},value_str:{}".format(id, metername_id, meter_type,value_int,value_str))
+    
     # 检查输参数合法性
     if id == None or id == '':
         req.code = 1
-        req.msg= "参数不正确"
+        req.msg= "缺少参数:id"
         return json.dumps(req.__dict__)
     
-    sql = 'select * from {} where id={}'.format(table_name, id)
-    result = db.select_db(sql)
-    if len(result) <= 0:
+    if not db.checkIdExist(table_name, id):
         req.code = 2
         req.msg = 'ID:{} not found in table:{}'.format(id, table_name)
         return json.dumps(req.__dict__, ensure_ascii=False) 
