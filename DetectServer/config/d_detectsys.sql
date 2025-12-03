@@ -11,7 +11,7 @@
  Target Server Version : 80042 (8.0.42)
  File Encoding         : 65001
 
- Date: 01/12/2025 12:04:57
+ Date: 02/12/2025 16:25:43
 */
 
 SET NAMES utf8mb4;
@@ -33,7 +33,7 @@ CREATE TABLE `m_alert`  (
   `sts` int NOT NULL,
   `create_time` datetime NOT NULL,
   PRIMARY KEY (`alert_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_alert
@@ -797,7 +797,7 @@ CREATE TABLE `m_devtemphis`  (
   `g_devtemp5` int NULL DEFAULT NULL,
   `updatetime` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_devtemphis
@@ -1405,6 +1405,171 @@ CREATE TABLE `m_maintain`  (
 INSERT INTO `m_maintain` VALUES (0000000001, 1, '测试1', '2025-05-15 16:00:47');
 
 -- ----------------------------
+-- Table structure for m_metername_point
+-- ----------------------------
+DROP TABLE IF EXISTS `m_metername_point`;
+CREATE TABLE `m_metername_point`  (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '序列号ID',
+  `name` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计名称',
+  `type` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计类型:1:LED_红,2:LED_绿;3:旋钮开关; 4:LED_黄; 5:LED_白;6:压板开关;7:表针;其他:待添加',
+  `pos_x` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置横坐标',
+  `pos_y` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置纵坐标',
+  `pos_h` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置高度',
+  `pos_w` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置宽度',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 146 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '表计信息名称管理表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of m_metername_point
+-- ----------------------------
+INSERT INTO `m_metername_point` VALUES (1, '电压互感_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-11-19 16:10:00');
+INSERT INTO `m_metername_point` VALUES (2, '电压互感_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-11-19 16:10:00');
+INSERT INTO `m_metername_point` VALUES (3, '电压互感_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (4, '1#所内变_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (5, '1#所内变_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (6, '1#所内变_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (7, '2#所内变_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (8, '2#所内变_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (9, '2#所内变_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (10, '3#电压互感器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (11, '3#电压互感器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (12, '3#电压互感器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (13, '母联234断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (14, '母联234断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (15, '母联234断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (16, '母联234断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (17, '母联234断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (18, '母联234断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (19, '母联234断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (20, '母联234-4_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (21, '母联234-4_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (22, '母联234-4_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (23, '214断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (24, '214断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (25, '214断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (26, '214断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (27, '218断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (28, '218断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (29, '218断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (30, '218断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (31, '218断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (32, '218断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (33, '218断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (34, '备用213断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (35, '备用213断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (36, '备用213断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (37, '备用213断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (38, '备用213断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (39, '备用213断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (40, '备用213断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (41, '备用216断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (42, '备用216断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (43, '备用216断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (44, '备用216断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (45, '备用216断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (46, '备用216断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (47, '备用216断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (48, '备用217断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (49, '备用217断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (50, '备用217断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (51, '备用217断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (52, '备用217断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (53, '备用217断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (54, '备用217断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (55, '备用237断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (56, '备用237断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (57, '备用237断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (58, '备用237断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (59, '备用237断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (60, '备用237断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (61, '备用237断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (62, '备用238断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (63, '备用238断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (64, '备用238断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (65, '备用238断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (66, '备用238断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (67, '备用238断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (68, '备用238断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (69, '备用239断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (70, '备用239断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (71, '备用239断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (72, '备用239断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (73, '备用239断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (74, '备用239断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (75, '备用239断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (76, '233断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (77, '233断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (78, '233断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (79, '233断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (80, '233断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (81, '233断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (82, '233断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (83, '202断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (84, '202断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (85, '202断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (86, '202断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (87, '202断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (88, '202断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (89, '202断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (90, '203断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (91, '203断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (92, '203断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (93, '203断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (94, '203断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (95, '203断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (96, '203断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (97, '201断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (98, '201断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (99, '201断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (100, '201断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (101, '201断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (102, '201断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (103, '201断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (104, '234-5隔离手车_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (105, '234-5隔离手车_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (106, '234-5隔离手车_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (107, '245断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (108, '245断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (109, '245断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (110, '245断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (111, '245断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (112, '245断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (113, '245断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (114, '232断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (115, '232断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (116, '232断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (117, '232断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (118, '232断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (119, '232断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (120, '232断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (121, '234断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (122, '234断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (123, '234断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (124, '234断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (125, '234断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (126, '234断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (127, '234断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (128, '234-4隔离手车_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (129, '234-4隔离手车_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (130, '234-4隔离手车_加热器输出指示_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (131, '214断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (132, '214断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (133, '214断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (134, '214断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (135, '214断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (136, '214断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (137, '214断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (138, '218断路器_分闸指示_LED_绿', '2', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (139, '218断路器_储能指示_LED_黄', '4', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (140, '218断路器_合闸指示_LED_红', '1', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (141, '218断路器_加热器输出指示灯_LED_白', '5', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (142, '218断路器_照明_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (143, '218断路器_加热器_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (144, '218断路器_储能_开关', '3', NULL, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_metername_point` VALUES (145, '这是一条表计修改', '0', '1', '2', '3', '4', '2025-12-02 16:39:11');
+
+-- ----------------------------
 -- Table structure for m_model
 -- ----------------------------
 DROP TABLE IF EXISTS `m_model`;
@@ -1576,7 +1741,8 @@ CREATE TABLE `m_stationinfo`  (
 -- ----------------------------
 -- Records of m_stationinfo
 -- ----------------------------
-INSERT INTO `m_stationinfo` VALUES (1, '北京雁栖湖变电站', '110kV', '北京市怀柔区雁栖湖', 1);
+INSERT INTO `m_stationinfo` VALUES (2, '北京雁栖湖变电站', '110kV', '北京市怀柔区雁栖湖', 1);
+INSERT INTO `m_stationinfo` VALUES (1, '北京首钢园变电站', '10', '北京市石景山区', 1);
 
 -- ----------------------------
 -- Table structure for m_stationroom
@@ -1593,19 +1759,50 @@ CREATE TABLE `m_stationroom`  (
 -- ----------------------------
 -- Records of m_stationroom
 -- ----------------------------
-INSERT INTO `m_stationroom` VALUES (29, 1, '掌尚信控', 0);
-INSERT INTO `m_stationroom` VALUES (30, 1, '主控室', 0);
-INSERT INTO `m_stationroom` VALUES (31, 1, '110kV开关室', 0);
-INSERT INTO `m_stationroom` VALUES (32, 1, '1#主变', 0);
-INSERT INTO `m_stationroom` VALUES (33, 1, '2#主变', 0);
-INSERT INTO `m_stationroom` VALUES (34, 1, '10kV开关室', 0);
-INSERT INTO `m_stationroom` VALUES (35, 1, '1#电容器室', 0);
-INSERT INTO `m_stationroom` VALUES (36, 1, '2#电容器室', 0);
-INSERT INTO `m_stationroom` VALUES (37, 1, '10kV所内消弧室', 0);
-INSERT INTO `m_stationroom` VALUES (38, 1, '室外35kV设备区', 0);
-INSERT INTO `m_stationroom` VALUES (39, 1, '室外电容器组', 0);
-INSERT INTO `m_stationroom` VALUES (40, 1, '集水井', 0);
-INSERT INTO `m_stationroom` VALUES (41, 1, '室外安防区', 0);
+-- ----------------------------
+-- Records of m_stationroom
+-- ----------------------------
+INSERT INTO `m_stationroom` VALUES (1, 1, '大跳台',0);
+INSERT INTO `m_stationroom` VALUES (2, 1, '五一剧场',0);
+INSERT INTO `m_stationroom` VALUES (3, 1, '秀池南路',0);
+INSERT INTO `m_stationroom` VALUES (4, 1, '六工汇办公',0);
+INSERT INTO `m_stationroom` VALUES (5, 1, '六工汇商业',0);
+INSERT INTO `m_stationroom` VALUES (6, 1, '动力街东',0);
+INSERT INTO `m_stationroom` VALUES (7, 1, '动力街西',0);
+INSERT INTO `m_stationroom` VALUES (8, 1, '冬训冰球馆',0);
+INSERT INTO `m_stationroom` VALUES (9, 1, '工业遗址公园',0);
+INSERT INTO `m_stationroom` VALUES (10, 1, '航天科工',0);
+INSERT INTO `m_stationroom` VALUES (11, 1, '核心区北区',0);
+INSERT INTO `m_stationroom` VALUES (12, 1, '冬奥TOC',0);
+INSERT INTO `m_stationroom` VALUES (13, 1, '北七筒',0);
+INSERT INTO `m_stationroom` VALUES (14, 1, '制氧厂',0);
+INSERT INTO `m_stationroom` VALUES (15, 1, '电厂酒店',0);
+INSERT INTO `m_stationroom` VALUES (16, 1, '高端产业区',0);
+INSERT INTO `m_stationroom` VALUES (17, 1, '服贸会',0);
+INSERT INTO `m_stationroom` VALUES (18, 1, '景观公园',0);
+INSERT INTO `m_stationroom` VALUES (19, 1, '冬训网球馆',0);
+INSERT INTO `m_stationroom` VALUES (20, 1, '运动员公寓',0);
+INSERT INTO `m_stationroom` VALUES (21, 1, '三高炉',0);
+INSERT INTO `m_stationroom` VALUES (22, 1, '首钢一高炉',0);
+INSERT INTO `m_stationroom` VALUES (23, 1, '五泵站',0);
+INSERT INTO `m_stationroom` VALUES (24, 1, '脱硫车间',0);
+INSERT INTO `m_stationroom` VALUES (25, 1, '文馆',0);
+INSERT INTO `m_stationroom` VALUES (26, 1, '四高炉',0);
+INSERT INTO `m_stationroom` VALUES (27, 1, '焦化厂',0);
+INSERT INTO `m_stationroom` VALUES (28, 1, '会展中心',0);
+INSERT INTO `m_stationroom` VALUES (29, 2, '掌尚信控', 0);
+INSERT INTO `m_stationroom` VALUES (30, 2, '主控室', 0);
+INSERT INTO `m_stationroom` VALUES (31, 2, '110kV开关室', 0);
+INSERT INTO `m_stationroom` VALUES (32, 2, '1#主变', 0);
+INSERT INTO `m_stationroom` VALUES (33, 2, '2#主变', 0);
+INSERT INTO `m_stationroom` VALUES (34, 2, '10kV开关室', 0);
+INSERT INTO `m_stationroom` VALUES (35, 2, '1#电容器室', 0);
+INSERT INTO `m_stationroom` VALUES (36, 2, '2#电容器室', 0);
+INSERT INTO `m_stationroom` VALUES (37, 2, '10kV所内消弧室', 0);
+INSERT INTO `m_stationroom` VALUES (38, 2, '室外35kV设备区', 0);
+INSERT INTO `m_stationroom` VALUES (39, 2, '室外电容器组', 0);
+INSERT INTO `m_stationroom` VALUES (40, 2, '集水井', 0);
+INSERT INTO `m_stationroom` VALUES (41, 2, '室外安防区', 0);
 
 -- ----------------------------
 -- Table structure for m_sts
@@ -1733,7 +1930,7 @@ CREATE TABLE `m_userinfo`  (
   `job` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL,
   `updatetime` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_userinfo
@@ -16442,24 +16639,161 @@ CREATE TABLE `m_visitationplaninfo_meter`  (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '序列号ID',
   `planid` int NOT NULL COMMENT '计划任务ID,关联m_visitationplan表的主键ID',
   `planinfoid` int NOT NULL COMMENT '计划子任务ID,关联m_visitationplaninfo表的主键ID',
-  `name` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计名称',
-  `type` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计类型:1:LED_红,2:LED_绿;3:LED_白; 4:LED_黄; 5:旋钮开关;6:压板开关;7:表针;其他:待添加',
+  `metername_id` int NULL DEFAULT NULL COMMENT '表计名称对应的ID,关联m_metername_point表的主键ID',
   `value_int` int NULL DEFAULT NULL COMMENT '存储整型表计值',
   `value_str` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '存储字符串型表计值',
-  `pos_x` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置横坐标',
-  `pos_y` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置纵坐标',
-  `pos_h` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置高度',
-  `pos_w` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表计位置宽度',
   `imgname` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '识别后得到的表计对应图片名',
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '创建任务时，子任务为表计读数时的表计名称管理' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 145 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '创建任务时，子任务为表计读数时的表计名称管理' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of m_visitationplaninfo_meter
 -- ----------------------------
-INSERT INTO `m_visitationplaninfo_meter` VALUES (1, 1, 1, '1号主控室', '1', 24, '24', '0', '1', '2', '3', NULL, '2025-11-19 16:10:00');
-INSERT INTO `m_visitationplaninfo_meter` VALUES (2, 1, 2, '2号主控室', '1', 50, '50', '0', '1', '2', '3', NULL, '2025-11-19 16:10:00');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (1, 1, 1, 1, NULL, NULL, NULL, '2025-11-19 16:10:00');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (2, 1, 1, 2, NULL, NULL, NULL, '2025-11-19 16:10:00');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (3, 1, 1, 3, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (4, 1, 1, 4, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (5, 1, 1, 5, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (6, 1, 1, 6, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (7, 1, 2, 7, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (8, 1, 2, 8, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (9, 1, 2, 9, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (10, 1, 3, 10, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (11, 1, 3, 11, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (12, 1, 3, 12, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (13, 1, 4, 13, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (14, 1, 4, 14, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (15, 1, 4, 15, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (16, 1, 4, 16, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (17, 1, 4, 17, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (18, 1, 4, 18, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (19, 1, 4, 19, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (20, 1, 5, 20, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (21, 1, 5, 21, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (22, 1, 5, 22, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (23, 1, 6, 23, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (24, 1, 6, 24, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (25, 1, 6, 25, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (26, 1, 6, 26, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (27, 1, 7, 27, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (28, 1, 7, 28, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (29, 1, 7, 29, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (30, 1, 7, 30, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (31, 1, 7, 31, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (32, 1, 7, 32, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (33, 1, 7, 33, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (34, 1, 8, 34, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (35, 1, 8, 35, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (36, 1, 8, 36, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (37, 1, 8, 37, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (38, 1, 8, 38, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (39, 1, 8, 39, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (40, 1, 8, 40, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (41, 1, 9, 41, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (42, 1, 9, 42, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (43, 1, 9, 43, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (44, 1, 9, 44, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (45, 1, 9, 45, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (46, 1, 9, 46, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (47, 1, 9, 47, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (48, 1, 10, 48, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (49, 1, 10, 49, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (50, 1, 10, 50, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (51, 1, 10, 51, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (52, 1, 10, 52, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (53, 1, 10, 53, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (54, 1, 10, 54, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (55, 1, 11, 55, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (56, 1, 11, 56, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (57, 1, 11, 57, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (58, 1, 11, 58, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (59, 1, 11, 59, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (60, 1, 11, 60, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (61, 1, 11, 61, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (62, 1, 12, 62, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (63, 1, 12, 63, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (64, 1, 12, 64, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (65, 1, 12, 65, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (66, 1, 12, 66, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (67, 1, 12, 67, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (68, 1, 12, 68, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (69, 1, 13, 69, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (70, 1, 13, 70, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (71, 1, 13, 71, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (72, 1, 13, 72, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (73, 1, 13, 73, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (74, 1, 13, 74, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (75, 1, 13, 75, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (76, 1, 14, 76, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (77, 1, 14, 77, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (78, 1, 14, 78, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (79, 1, 14, 79, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (80, 1, 14, 80, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (81, 1, 14, 81, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (82, 1, 14, 82, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (83, 1, 15, 83, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (84, 1, 15, 84, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (85, 1, 15, 85, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (86, 1, 15, 86, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (87, 1, 15, 87, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (88, 1, 15, 88, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (89, 1, 15, 89, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (90, 1, 16, 90, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (91, 1, 16, 91, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (92, 1, 16, 92, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (93, 1, 16, 93, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (94, 1, 16, 94, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (95, 1, 16, 95, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (96, 1, 16, 96, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (97, 1, 17, 97, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (98, 1, 17, 98, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (99, 1, 17, 99, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (100, 1, 17, 100, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (101, 1, 17, 101, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (102, 1, 17, 102, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (103, 1, 17, 103, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (104, 1, 18, 104, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (105, 1, 18, 105, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (106, 1, 18, 106, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (107, 1, 19, 107, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (108, 1, 19, 108, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (109, 1, 19, 109, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (110, 1, 19, 110, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (111, 1, 19, 111, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (112, 1, 19, 112, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (113, 1, 19, 113, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (114, 1, 20, 114, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (115, 1, 20, 115, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (116, 1, 20, 116, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (117, 1, 20, 117, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (118, 1, 20, 118, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (119, 1, 20, 119, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (120, 1, 20, 120, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (121, 1, 21, 121, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (122, 1, 21, 122, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (123, 1, 21, 123, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (124, 1, 21, 124, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (125, 1, 21, 125, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (126, 1, 21, 126, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (127, 1, 21, 127, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (128, 1, 22, 128, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (129, 1, 22, 129, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (130, 1, 22, 130, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (131, 1, 23, 131, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (132, 1, 23, 132, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (133, 1, 23, 133, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (134, 1, 23, 134, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (135, 1, 23, 135, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (136, 1, 23, 136, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (137, 1, 23, 137, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (138, 1, 24, 138, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (139, 1, 24, 139, 1, '亮', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (140, 1, 24, 140, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (141, 1, 24, 141, 0, '关', NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (142, 1, 24, 142, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (143, 1, 24, 143, NULL, NULL, NULL, '2025-12-01 17:58:30');
+INSERT INTO `m_visitationplaninfo_meter` VALUES (144, 1, 24, 144, NULL, NULL, NULL, '2025-12-01 17:58:30');
 
 -- ----------------------------
 -- Table structure for m_visitationplaninfohistory
