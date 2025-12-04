@@ -1,5 +1,5 @@
 import socket
-
+from time import sleep
 
 def send_udp_message(message, host, port):
     """
@@ -29,8 +29,17 @@ def send_udp_message(message, host, port):
 
 # 使用示例
 if __name__ == "__main__":
-    target_ip = "192.168.0.205"  # 替换为目标IP地址
-    target_port = 8009  # 替换为目标端口号
-    message_to_send = "bj200322,,192.168.0.11,,8000,,admin,,12345,,33,,bj200322_1_10_39_32_202.gif"
+    target_ip = "192.168.20.31"  # 替换为目标IP地址
+    target_port = 8088  # 替换为目标端口号
+    # message_to_send = "bj200322,,192.168.20.30,,8000,,admin,,12345,,33,,bj200330_33_11_37_46_297.gif"
+    # 定义一个包含多条消息的消息集合
+    message_to_send_list = [
+        "bj200322,,192.168.0.11,,8000,,admin,,12345,,33,,bj200322_1_10_39_32_202.gif",
+    ]
 
-    send_udp_message(message_to_send, target_ip, target_port)
+    for message_to_send in message_to_send_list:
+        print(f"准备发送消息给udpserver: {message_to_send}...")
+        send_udp_message(message_to_send, target_ip, target_port)
+        print("消息发送完成。\n")
+
+        sleep(3)  # 等待3秒钟再发送下一条消息
