@@ -1,7 +1,7 @@
 
 /etc/init.d/mysql start
 
-/usr/local/nginx/sbin/nginx -t -c /usr/local/nginx/conf/nginx.conf
+nginx -t -c /etc/nginx/nginx.conf
 
 
 python_num=`ps aux | grep python | wc -l`

@@ -45,12 +45,12 @@ def getModelFileNameAndCurErrLevel():
     sqltotal = "select a.filename,a.id from m_model a where a.flag = 1"
     totaldata = db.select_db(sqltotal)
     #print("getSystemConfig:", totaldata[0]["filename"])
-    systemsetting["filename"] = totaldata[0]["filename"]
-    systemsetting["fileid"] = totaldata[0]["id"]
+    systemsetting["filename"] = totaldata[0].get("filename")  # 避免 KeyError
+    systemsetting["fileid"] = totaldata[0].get("id")
     sqltotal = "select curerrlevel from m_systemsetting"
     totaldata = db.select_db(sqltotal)
     #print("getSystemConfig:",totaldata[0]["curerrlevel"])
-    systemsetting["curerrlevel"] = totaldata[0]["curerrlevel"]
+    systemsetting["curerrlevel"] = totaldata[0].get("curerrlevel")
     return systemsetting
 
 '''生成唯一码'''

@@ -194,6 +194,7 @@ class HikvisionCapture:
         try:
             # 转动到目标预置点
             if preset_id != 0:
+                # 操作码39是调用预置点位的命令
                 if not self.net_dvr_ptzPreset(channel, 39, preset_id):
                     return False
 

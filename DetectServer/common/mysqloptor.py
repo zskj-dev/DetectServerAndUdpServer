@@ -22,24 +22,46 @@ class MysqlDB(object):
         #self.cur.close()
         #self.conn.close()
         pass
-	
-    def select_db(self ,sql):
-        self.conn.ping(reconnect=True)
-        self.cur.execute(sql)
-        data = self.cur.fetchall()
-        return data
+        '''
+                with self.pool.connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, params)
+                    return cursor.fetchall()
+        '''
+
+    def select_db(self, sql):
+        # self.conn.ping(reconnect=True)
+        # self.cur.execute(sql)
+        # data = self.cur.fetchall()
+        # return data
+        with self.pool.connection() as conn:
+            with conn.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
+                # 打印驱动和游标类型
+                # print(f"驱动模块: {conn.__class__.__module__}")
+                # print(f"游标类型: {cursor.__class__.__name__}")
+                cursor.execute(sql)
+                result = cursor.fetchall()
+                # assert isinstance(result, list), "select_db查询结果不是list类型"
+                return result
 
     def execute_db(self, sql):
         try:
-            self.conn.ping(reconnect=True)
-            self.cur.execute(sql)
-            self.conn.commit()
+            with self.pool.connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(sql)
+                    conn.commit()
         except Exception as e:
-            print("opt error:{}".format(e))
-            self.conn.rellback()
-
-    
-      
+            print("execute_db error: {}".format(e))
+            # 如果有错误，回滚事务
+            with self.pool.connection() as conn:
+                conn.rollback()
+        # try:
+        #     self.conn.ping(reconnect=True)
+        #     self.cur.execute(sql)
+        #     self.conn.commit()
+        # except Exception as e:
+        #     print("opt error:{}".format(e))
+        #     self.conn.rellback()
 
 
     def insertData(self ,TableName ,dic):
