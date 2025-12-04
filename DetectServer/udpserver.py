@@ -765,6 +765,24 @@ def UpdatePlanInfoToHis(planid, mgcode, taskprogress):
     #print("UpdatePlanInfoToHis:", sqlstr)
     db.execute_db(sqlstr)
 
+# 检查任务队列是否为空
+loop_for_queue_cnt = 0
+def _CheckTaskQueueIsEmpty(mqDetectTask):
+    global loop_for_queue_cnt 
+    if hasattr(mqDetectTask, 'qsize'):
+        if mqDetectTask.qsize() == 0:
+            if loop_for_queue_cnt == 5:
+                print("Work Thread Queue is empty, wait for tasks...")
+                loop_for_queue_cnt = 0
+            else:
+                loop_for_queue_cnt += 1
+            return True
+        else:
+            loop_for_queue_cnt = 0
+            return False
+    else:
+        return False
+
 def UpdatePlanInfoToPlan(planid, val):
     print("UpdatePlanInfoToPlan:", val)
     sqlstr = '''
@@ -786,6 +804,10 @@ def VisitationPlanWorkerThread(mqDetectTask):
     print("CheckNvrChannelStateThread start over, wait task!")
     while 1:
         try:
+            if True == _CheckTaskQueueIsEmpty(mqDetectTask):
+                time.sleep(1)
+                continue
+
             t = mqDetectTask.get(timeout=1)
             print("VisitationPlanWorkerThread task  start: ", t)
             planid = t[0]
