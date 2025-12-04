@@ -1838,6 +1838,11 @@ def GetVisitationPlan():
     sqltotal = "select * from m_visitationplan"
     totaldata = db.select_db(sqltotal)
     print("GetVisitationPlan:",totaldata)
+    for i in totaldata:
+        if i["predatetime"] is not None:
+            i["predatetime"] = i["predatetime"].strftime("%Y-%m-%d %H:%M:%S")
+        if i["createtime"] is not None:
+            i["createtime"] = i["createtime"].strftime("%Y-%m-%d %H:%M:%S")
     req.code = 0
     req.msg = "读取成功"
     req.data = totaldata
