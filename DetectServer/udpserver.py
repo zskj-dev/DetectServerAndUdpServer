@@ -124,7 +124,7 @@ def getTableNextID(TableName):
     return id
 
 #巡视任务子项 执行函数
-def sendOptInfoToDev(optipaddr, yiqiid,port=8081, timeout=30):
+def sendOptInfoToDev(optipaddr, yiqiid,port=8082, timeout=30):
     """
     通过TCP发送命令并根据响应或超时判断结果
 
@@ -223,6 +223,26 @@ def UpdateSubPlanCheckResultByHisid(hisid, errinfo, errid, errtype, detectresult
         id = {}
     '''.format(errinfo,errid, errtype, detectresult, hisid )
     db.execute_db(sqlstr)
+
+# 更新表计内容中的图片名称
+def _UpdateSubPlanMeterInfoImageNameByPlanInfoID(hisid, meterimgname):
+
+    try:
+        hisid = int(hisid)
+        sqlstr = '''
+        UPDATE m_visitationplaninfo_meter
+            SET 
+            imgname = '{}'
+            WHERE 
+            planinfoid = {}
+        '''.format(meterimgname, hisid)
+        db.execute_db(sqlstr)
+        return 0
+    except Exception as e:
+        print(f"Invalid hisid value: {hisid}")
+        return 1
+
+
 def PlanSubItemAction(iitem, mgcode):
     if iitem["id"] is None:
         return
@@ -344,6 +364,10 @@ def PlanSubItemAction(iitem, mgcode):
                                                                  systemsetting["curerrlevel"])
                 # 检测图片并返回检测类型、检测state
                 print(imgfilenameonly, systemsetting)
+                
+                # 将图片名称更新到表计信息表中
+                _UpdateSubPlanMeterInfoImageNameByPlanInfoID(hisid, imgfilenameonly)
+
                 detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
             except Exception as e:
                 print(e)
@@ -970,7 +994,7 @@ def VisitationPlanThread(mqDetectTask):
             predatetime1 = None
             if predatetime is not None:
                 predatetime1 = predatetime.strftime('%Y-%m-%d %H:%M:%S')
-            createtime = totaldata[index]["createtime"].strftime('%Y-%m-%d %H:%M:%S')
+            createtime = totaldata[index].get("createtime").strftime('%Y-%m-%d %H:%M:%S')
 
             #不使能检测或者正在检测中和巡视任务，则返回
             if taskplanstate == 0 or taskplanstate == 2  or taskplanclass == 0:
@@ -1132,7 +1156,7 @@ def _check_and_delete():
         # print("totaldata:",totaldata)
         for index in range(len(totaldata)):
             id = totaldata[index]["id"]
-            endtime_str = totaldata[index]["endtime"]
+            endtime_str = totaldata[index].get["endtime"]
         # 解析时间字符串，根据实际格式调整
         try:
             # 假设时间格式为: %Y-%m-%d %H:%M:%S
