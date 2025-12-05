@@ -721,7 +721,7 @@ def InsertErrorSigleImage(NVRInfo,errorimg,errortype,state):
         id = int(select_maxid_result[0]['maxid']) + 1
     insert_dic = {
         'id': id,
-        'devid': 'bj200100',
+        'devid': '',
         'errdatetime': nowTime,
         'nvrip': nvrip,
         'nvrport': nvrport,
@@ -730,7 +730,7 @@ def InsertErrorSigleImage(NVRInfo,errorimg,errortype,state):
         'nvrchannel': nvrchannel,
         'errorimg': errorimg,
         'errortype': errortype,
-        'errfrom': 0,
+        'errfrom': 2,  # 告警来源: 1:检测终端; 2:系统任务
         'revint': 0,
         'revstr': "0",
         'state': state,
@@ -876,7 +876,7 @@ def udp_server(mqDetectTask,host='0.0.0.0', port=8009):
                 'nvrchannel': pd[5],
                 'errorimg': "",
                 'errortype': 0,
-                'errfrom': 0,
+                'errfrom': 1, # 告警来源: 1:检测终端; 2:系统任务
                 'revint': 0,
                 'revstr': "0",
                 'state': 0,
