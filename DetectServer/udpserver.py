@@ -225,21 +225,28 @@ def UpdateSubPlanCheckResultByHisid(hisid, errinfo, errid, errtype, detectresult
     db.execute_db(sqlstr)
 
 # 更新表计内容中的图片名称
-def _UpdateSubPlanMeterInfoImageNameByPlanInfoID(hisid, meterimgname):
-
+# input：
+#       planinfoid：   巡视任务子项ID
+#       meterimgname：  表计图片名称
+def _UpdateSubPlanMeterInfoImageNameByPlanInfoID(planinfoid, meterimgname):
+    table_name = "m_visitationplaninfo_meter"
+    # 如果输入的图像名字带路径，则去掉路径
+    if os.path.isabs(meterimgname):
+        meterimgname = os.path.basename(meterimgname)
     try:
-        hisid = int(hisid)
+        planinfoid = int(planinfoid)
         sqlstr = '''
-        UPDATE m_visitationplaninfo_meter
+        UPDATE {}
             SET 
             imgname = '{}'
             WHERE 
             planinfoid = {}
-        '''.format(meterimgname, hisid)
+        '''.format(table_name, meterimgname, planinfoid)
         db.execute_db(sqlstr)
+        print("Success:_UpdateSubPlanMeterInfoImageNameByPlanInfoID sql:", sqlstr)
         return 0
     except Exception as e:
-        print(f"Invalid hisid value: {hisid}")
+        print("Failed:update {} image:{}".format(table_name, e))
         return 1
 
 
@@ -358,16 +365,16 @@ def PlanSubItemAction(iitem, mgcode):
             # 是表计情况下执行下恻方法：
             print("该摄像头可控的是表计任务")
             print("参数:", hisid, errstr, errid, errtype, resultstr)
+
+            # 将图片名称更新到表计信息表中
+            _UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+
             try:
                 systemsetting = getModelFileNameAndCurErrLevel()
                 systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
                                                                  systemsetting["curerrlevel"])
                 # 检测图片并返回检测类型、检测state
                 print(imgfilenameonly, systemsetting)
-                
-                # 将图片名称更新到表计信息表中
-                _UpdateSubPlanMeterInfoImageNameByPlanInfoID(hisid, imgfilenameonly)
-
                 detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
             except Exception as e:
                 print(e)
@@ -438,6 +445,10 @@ def PlanSubItemAction(iitem, mgcode):
             # 是表计情况下执行下恻方法：
             print("该摄像头不可可控的是表计任务")
             print("参数:", hisid, errstr, errid, errtype, resultstr)
+
+            # 将图片名称更新到表计信息表中
+            _UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+
             try:
                 systemsetting = getModelFileNameAndCurErrLevel()
                 systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
