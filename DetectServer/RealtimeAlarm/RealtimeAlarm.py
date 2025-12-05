@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect,request,current_app,send_file
+from flask import Blueprint, render_template, redirect, request, current_app, send_file
 from flask import Flask, render_template, request, jsonify, make_response
 from common.mysqloptor import db
 from common.reqresult import ReqResult
@@ -16,11 +16,11 @@ import cv2
 import random
 import string
 import csv
-from PIL import Image,ImageDraw
+from PIL import Image, ImageDraw
 import io
 
 import socket  # 下发机器人通知使用
-from hk.getimgfromDVRBySDK import *
+from hk.getimgfromDVRBySDK import * #
 
 set_upload_path = 'images'
 set_result_path = 'images'
@@ -66,7 +66,8 @@ def getModelFileNameAndCurErrLevel():
 
 def getModelFileTypeErrLevel(modelid, syslevel):
     li = {}
-    sqltotal = "select modelid, errtypeindex, errtypename, errtypelevel from m_modelinfo where modelid = {}".format( modelid)
+    sqltotal = "select modelid, errtypeindex, errtypename, errtypelevel from m_modelinfo where modelid = {}".format(
+        modelid)
     totaldata = db.select_db(sqltotal)
 
     for item in totaldata:
@@ -82,9 +83,10 @@ def getModelFileTypeErrLevel(modelid, syslevel):
 '''
     2.图片下载预览
 '''
-@realtimealarm.route('/download/<filename>',methods=["post","get"])
-def download_image(filename):
 
+
+@realtimealarm.route('/download/<filename>', methods=["post", "get"])
+def download_image(filename):
     gifpath = "errorgifs"
     imgpath = "images"
     # 构造文件的完整路径
@@ -110,12 +112,17 @@ def download_image(filename):
         # 如果文件不存在，返回404错误
         return "File not found", 404
 
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+
 '''
     1.检测
 '''
-@realtimealarm.route('/detection',methods=["post","get"])
+
+
+@realtimealarm.route('/detection', methods=["post", "get"])
 def DetectionImg():
     if request.method == 'POST':
         systemsetting = getModelFileNameAndCurErrLevel()
@@ -150,7 +157,7 @@ def DetectionImg():
                     if systemsetting["info"].get(str(int(cls)), 0) == 1:
                         # 获取类别名称（根据你的模型类别定义）
                         class_name = model.names[int(cls)]
-                        #class_name = systemsetting["info"]
+                        # class_name = systemsetting["info"]
                         # 在图像上绘制边界框和类别名称
                         draw = ImageDraw.Draw(rgb_img)
                         color = localcolors[int(cls) % len(localcolors)]
@@ -166,7 +173,7 @@ def DetectionImg():
                 filenamea = secure_filename(random_str + f.filename)
                 upload_path = os.path.join(outputpath, filenamea)
                 rgb_img.save(upload_path)
-                #img.save(processed_bytes, format="PNG")
+                # img.save(processed_bytes, format="PNG")
 
         t1 = time.time()
         print('Done. (%.3fs)' % (t1 - t0))
@@ -182,8 +189,8 @@ def DetectionImg():
         print(f"Most common type: {most_common_type} with count {type_counts[most_common_type]}")
 
         item = {
-             "cls": most_common_type,
-            "clsname":model.names[int(most_common_type)]
+            "cls": most_common_type,
+            "clsname": model.names[int(most_common_type)]
         }
         # strlist.append(item)
 
@@ -198,14 +205,17 @@ def DetectionImg():
 '''
     3.获取触发信息最大ID
 '''
+
+
 @realtimealarm.route('/GetCurMsgMaxID', methods=["post"])
 def GetCurMsgMaxID():
-    print("token",request.form.get("token"))
-    token=request.form.get("token")
+    print("token", request.form.get("token"))
+    token = request.form.get("token")
     current_app.logger.info('GetCurAlarmMaxID   token:{}'.format(token))
 
     sql = "select max(id) as id from v_errlist where state != 3"
     maxid = db.select_db(sql)
+    print(maxid)
     req = ReqResult()
     if len(maxid) == 0:
         req.code = 1
@@ -214,13 +224,16 @@ def GetCurMsgMaxID():
         req.data = maxid[0]["id"]
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     3.1获取告警最大ID
 '''
+
+
 @realtimealarm.route('/GetCurAlarmMaxID', methods=["post"])
 def GetCurAlarmMaxID():
-    print("token",request.form.get("token"))
-    token=request.form.get("token")
+    print("token", request.form.get("token"))
+    token = request.form.get("token")
     current_app.logger.info('GetCurAlarmMaxID   token:{}'.format(token))
 
     sql = "select max(id) as id from v_errlist where state = 3"
@@ -237,9 +250,10 @@ def GetCurAlarmMaxID():
 '''
     4.获取实时告警列表
 '''
+
+
 @realtimealarm.route('/GetCurAlarmList', methods=["post"])
 def GetCurAlarmList():
-    print("token", request.form.get("token"))
     print("pagesize", request.form.get("pagesize"))
     print("pagenum", request.form.get("pagenum"))
 
@@ -247,20 +261,21 @@ def GetCurAlarmList():
     pagenum = request.form.get("pagenum")
     token = request.form.get("token")
     req = ReqResult()
-    if pagesize == None or pagenum == None :
+    if pagesize == None or pagenum == None:
         req.code = 1
-        req.msg= "参数不正确"
+        req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('GetCurAlarmList   token:{},pagesize:{},pagenum:{}'.format(token, pagesize, pagenum))
     return getlist(0, pagesize, pagenum)
 
-'''
-    4.1获取实时告警列表
-'''
-@realtimealarm.route('/GetCurMsgList', methods=["post"])
-def GetCurMsgList():
 
-    print("token", request.form.get("token"))
+'''
+    4.1获取全部终端上报信息列表
+'''
+
+
+@realtimealarm.route('/GetAllAlarmMsgList', methods=["post"])
+def GetAllAlarmMsgList():
     print("pagesize", request.form.get("pagesize"))
     print("pagenum", request.form.get("pagenum"))
 
@@ -268,20 +283,21 @@ def GetCurMsgList():
     pagenum = request.form.get("pagenum")
     token = request.form.get("token")
     req = ReqResult()
-    if pagesize == None or pagenum == None :
+    if pagesize == None or pagenum == None:
         req.code = 1
-        req.msg= "参数不正确"
+        req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('GetCurAlarmList   token:{},pagesize:{},pagenum:{}'.format(token, pagesize, pagenum))
     return getlist(1, pagesize, pagenum)
 
-'''
-    4.2获取列表
-'''
-@realtimealarm.route('/GetAllMsgList', methods=["post"])
-def GetAllMsgList():
 
-    print("token", request.form.get("token"))
+'''
+    4.2获取标记误报告警列表
+'''
+
+
+@realtimealarm.route('/GetAllMsgMistakeList', methods=["post"])
+def GetAllMsgMistakeList():
     print("pagesize", request.form.get("pagesize"))
     print("pagenum", request.form.get("pagenum"))
 
@@ -289,20 +305,21 @@ def GetAllMsgList():
     pagenum = request.form.get("pagenum")
     token = request.form.get("token")
     req = ReqResult()
-    if pagesize == None or pagenum == None :
+    if pagesize == None or pagenum == None:
         req.code = 1
-        req.msg= "参数不正确"
+        req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('GetCurAlarmList   token:{},pagesize:{},pagenum:{}'.format(token, pagesize, pagenum))
-    return getlist(3, pagesize, pagenum)
+    return getlist(2, pagesize, pagenum)
+
 
 '''
-    4.3 获取触发信息数据数据
+    4.3获取所有告警数据信息
 '''
-@realtimealarm.route('/GetAllMsgFlagList', methods=["post"])
-def GetAllMsgFlagList():
 
-    print("token", request.form.get("token"))
+
+@realtimealarm.route('/GetAllMsgList', methods=["post"])
+def GetAllMsgList():
     print("pagesize", request.form.get("pagesize"))
     print("pagenum", request.form.get("pagenum"))
 
@@ -310,9 +327,28 @@ def GetAllMsgFlagList():
     pagenum = request.form.get("pagenum")
     token = request.form.get("token")
     req = ReqResult()
-    if pagesize == None or pagenum == None :
+    if pagesize == None or pagenum == None:
         req.code = 1
-        req.msg= "参数不正确"
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('GetAllMsgList   token:{},pagesize:{},pagenum:{}'.format(token, pagesize, pagenum))
+    return getlist(3, pagesize, pagenum)
+
+
+'''
+    4.4 获取加标记的信息数据数据
+'''
+
+
+@realtimealarm.route('/GetAllMsgFlagList', methods=["post"])
+def GetAllMsgFlagList():
+    pagesize = request.form.get("pagesize")
+    pagenum = request.form.get("pagenum")
+    token = request.form.get("token")
+    req = ReqResult()
+    if pagesize == None or pagenum == None:
+        req.code = 1
+        req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('GetAllMsgFlagList   token:{},pagesize:{},pagenum:{}'.format(token, pagesize, pagenum))
     return getlist(4, pagesize, pagenum)
@@ -390,23 +426,22 @@ def getlist(para_type, pagesize, pagenum):
     else:
         req.data = dateInfo
     return json.dumps(req.__dict__, ensure_ascii=False)
-    #return json.dumps(req.__dict__)
+    # return json.dumps(req.__dict__)
+
 
 '''
-    4.4. 标记信息
+    4.5. 标记信息
 '''
+
+
 @realtimealarm.route('/UpdateMsgFlag', methods=["post"])
 def UpdateMsgFlag():
-
-    print("token", request.form.get("token"))
-    print("id", request.form.get("id"))
-    print("flag", request.form.get("flag"))
     id = request.form.get("id")
     flag = request.form.get("flag")
     req = ReqResult()
-    if id == None or flag == None :
+    if id == None or flag == None:
         req.code = 1
-        req.msg= "参数不正确"
+        req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('UpdateMsgFlag   id:{},flag:{}'.format(id, flag))
     sql = "update m_errorinfo set flag={} where id={}".format(flag, id)
@@ -418,21 +453,90 @@ def UpdateMsgFlag():
 
 
 '''
-    5. 获取模型列表
+    4.6. 标记误报信息
 '''
 
 
-@realtimealarm.route('/GetModelsList', methods=["post"])
-def GetModelsList():
-    sqltotal = "select id,filename,flag from m_model"
-    totaldata = db.select_db(sqltotal)
-    print("GetModelsList:", totaldata)
-
+@realtimealarm.route('/UpdateMsgMistakeFlag', methods=["post"])
+def UpdateMsgMistakeFlag():
+    id = request.form.get("id")
+    flag = request.form.get("flag")
     req = ReqResult()
+    if id == None or flag == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('UpdateMsgFlag   id:{},flag:{}'.format(id, flag))
+    sql = "update m_errorinfo set flag={},confirm =1  where id={}".format(flag, id)
+    db.execute_db(sql)
     req.code = 0
-    req.msg = "读取成功"
-    req.data = totaldata
+    req.msg = "success"
 
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+    4.7. 确定消息
+'''
+
+
+@realtimealarm.route('/UpdateMsgConfirmState', methods=["post"])
+def UpdateMsgConfirmState():
+    id = request.form.get("id")
+    req = ReqResult()
+    if id == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('UpdateMsgFlag   id:{}'.format(id))
+    sql = "update m_errorinfo set confirm =1  where id={}".format(id)
+    db.execute_db(sql)
+    req.code = 0
+    req.msg = "success"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+    4.8. 确定多个消息
+'''
+
+
+@realtimealarm.route('/UpdateMsgsConfirmState', methods=["post"])
+def UpdateMsgsConfirmState():
+    print("ids", request.form.get("ids"))
+    ids = request.form.get("ids")
+    req = ReqResult()
+    if ids == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('UpdateMsgFlag   id:{}'.format(ids))
+    sql = "update m_errorinfo set confirm = 1  where id in ({})".format(ids)
+    db.execute_db(sql)
+    req.code = 0
+    req.msg = "success"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+    4.9. 标记多个误报信息
+'''
+@realtimealarm.route('/UpdateMsgsMistakeFlag', methods=["post"])
+def UpdateMsgsMistakeFlag():
+    ids = request.form.get("ids")
+    flag = request.form.get("flag")
+    req = ReqResult()
+    if ids == None or flag == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('UpdateMsgFlag   ids:{},flag:{}'.format(ids, flag))
+    sql = "update m_errorinfo set flag={},confirm = 1  where id in ({})".format(flag, ids)
+    db.execute_db(sql)
+    req.code = 0
+    req.msg = "success"
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
@@ -462,10 +566,25 @@ def is_file_readable_with_content(file_path):
 
 
 '''
+    5. 获取模型列表
+'''
+@realtimealarm.route('/GetModelsList', methods=["post"])
+def GetModelsList():
+    sqltotal = "select id,filename,flag from m_model"
+    totaldata = db.select_db(sqltotal)
+    print("GetModelsList:", totaldata)
+
+    req = ReqResult()
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
    5.1 添加模型
 '''
-
-
 @realtimealarm.route('/AddModelInfo', methods=["post"])
 def AddModelInfo():
     req = ReqResult()
@@ -505,11 +624,8 @@ def AddModelInfo():
 '''
     5.2 删除模型
 '''
-
-
 @realtimealarm.route('/DeleteModelInfo', methods=["post"])
 def DeleteModelInfo():
-    print("id", request.form.get("id"))
     id = request.form.get("id")
     req = ReqResult()
     if id == None:
@@ -532,12 +648,8 @@ def DeleteModelInfo():
 '''
    5.3. 修改模型使用状态
 '''
-
-
 @realtimealarm.route('/UpdateModelUseFlag', methods=["post"])
 def UpdateModelUseFlag():
-    print("id", request.form.get("id"))
-    print("flag", request.form.get("flag"))
     id = request.form.get("id")
     flag = request.form.get("flag")
     req = ReqResult()
@@ -559,27 +671,26 @@ def UpdateModelUseFlag():
 '''
 @realtimealarm.route('/GetErrorTypeList', methods=["post"])
 def GetErrorTypeList():
-
-    print("token", request.form.get("token"))
-    print("pagesize", request.form.get("pagesize"))
-    print("pagenum", request.form.get("pagenum"))
     id = request.form.get("modelid")
     pagesize = request.form.get("pagesize")
     pagenum = request.form.get("pagenum")
     token = request.form.get("token")
     req = ReqResult()
-    if pagesize == None or pagenum == None  or id == None :
+    if pagesize == None or pagenum == None or id == None:
         req.code = 1
-        req.msg= "参数不正确"
+        req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('GetCurAlarmList   token:{},pagesize:{},pagenum:{}'.format(token, pagesize, pagenum))
 
     sql = "select * from m_modelinfo  where modelid={} ORDER BY errtypeindex desc limit {},{}".format(id,
-        str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
+                                                                                                      str((
+                                                                                                                      int(pagenum) - 1) * int(
+                                                                                                          pagesize)),
+                                                                                                      str(pagesize))
 
-    print("--------GetErrorTypeList sql:",sql)
+    print("--------GetErrorTypeList sql:", sql)
     listdata = db.select_db(sql)
-    print("--------GetErrorTypeList listdatalen:",len(listdata))
+    print("--------GetErrorTypeList listdatalen:", len(listdata))
     sqltotal = "select count(*) as cnt from m_modelinfo where modelid={}".format(id)
     totaldata = db.select_db(sqltotal)
     dateInfo = {}
@@ -594,6 +705,7 @@ def GetErrorTypeList():
         req.data = dateInfo
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     6.1 修改告警类型处理方式
 '''
@@ -604,7 +716,8 @@ def ModifyErrorTypeAlarm():
     errtypename = request.form.get("errtypename")
     errtypelevel = request.form.get("errtypelevel")
     tips = request.form.get("tips")
-    sql = "update m_modelinfo set errtypeindex={}, errtypename='{}',  errtypelevel={},tips='{}'  where id={}".format(errtypeindex,errtypename,errtypelevel,tips,id)
+    sql = "update m_modelinfo set errtypeindex={}, errtypename='{}',  errtypelevel={},tips='{}'  where id={}".format(
+        errtypeindex, errtypename, errtypelevel, tips, id)
     print("----ModifyErrorTypeAlarm sql:", sql)
     db.execute_db(sql)
     print("----ModifyErrorTypeAlarm sql over!")
@@ -613,6 +726,7 @@ def ModifyErrorTypeAlarm():
     req.msg = "修改成功"
 
     return json.dumps(req.__dict__, ensure_ascii=False)
+
 
 '''
    6.2 添加告警类型处理方式
@@ -629,7 +743,10 @@ def AddErrorTypeAlarm():
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
-    current_app.logger.info('AddErrorTypeAlarm  modelid:{}  errortype:{},errorname:{},alarmtype:{},tips:{}'.format(modelid,errtypeindex, errtypename,errtypelevel,tips))
+    current_app.logger.info(
+        'AddErrorTypeAlarm  modelid:{}  errortype:{},errorname:{},alarmtype:{},tips:{}'.format(modelid, errtypeindex,
+                                                                                               errtypename,
+                                                                                               errtypelevel, tips))
 
     select_maxid_sql = 'select max(id) as maxid from m_modelinfo'
     select_maxid_result = db.select_db(select_maxid_sql)
@@ -644,7 +761,7 @@ def AddErrorTypeAlarm():
         'errtypeindex': errtypeindex,
         'errtypename': errtypename,
         'errtypelevel': errtypelevel,
-        'tips':tips
+        'tips': tips
     }
     db.insertData("m_modelinfo", insert_dic)
 
@@ -653,12 +770,12 @@ def AddErrorTypeAlarm():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     6.3 删除告警类型处理方式
 '''
 @realtimealarm.route('/DeleteErrorTypeAlarm', methods=["post"])
 def DeleteErrorTypeAlarm():
-    print("errortype", request.form.get("errortype"))
     id = request.form.get("id")
     req = ReqResult()
     if id == None:
@@ -667,7 +784,7 @@ def DeleteErrorTypeAlarm():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('DeleteErrorTypeAlarm   errortype:{}'.format(id))
 
-    sql = "delete from m_modelinfo where id={}".format( id)
+    sql = "delete from m_modelinfo where id={}".format(id)
     print("----DeleteErrorTypeAlarm sql:", sql)
     db.execute_db(sql)
     print("----DeleteErrorTypeAlarm sql over!")
@@ -677,6 +794,7 @@ def DeleteErrorTypeAlarm():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     7. 获取变电站列表
 '''
@@ -684,7 +802,7 @@ def DeleteErrorTypeAlarm():
 def GetStationList():
     sqltotal = "select id,stationname,type,position  from m_stationinfo"
     totaldata = db.select_db(sqltotal)
-    print("GetStationList:",totaldata)
+    print("GetStationList:", totaldata)
 
     req = ReqResult()
     req.code = 0
@@ -692,6 +810,7 @@ def GetStationList():
     req.data = totaldata
 
     return json.dumps(req.__dict__, ensure_ascii=False)
+
 
 '''
    8 获取指定变电站的摄像头列表
@@ -711,7 +830,7 @@ def GetCamListByStation():
     LEFT JOIN m_stationroom bb on aa.roomid = bb.id LEFT JOIN m_stationinfo cc on cc.id = bb.stationid
     LEFT JOIN m_dvr dd on dd.dvr_id = aa.dvr_id where cc.id ={} ORDER BY camera_id; """.format(id)
     totaldata = db.select_db(sqltotal)
-    print("GetCamListByStation:",totaldata)
+    print("GetCamListByStation:", totaldata)
 
     req = ReqResult()
     req.code = 0
@@ -720,17 +839,17 @@ def GetCamListByStation():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     9. 告警数据下载（get）
 '''
-@realtimealarm.route('/GetAllMsgInfoFile/<msgtype>', methods=["post","get"])
+@realtimealarm.route('/GetAllMsgInfoFile/<msgtype>', methods=["post", "get"])
 def GetAllMsgInfoFile(msgtype):
-    #msgtype = request.form.get("msgtype")
+    # msgtype = request.form.get("msgtype")
     msgtype = int(msgtype)
-    print(msgtype)
-    sqltotal  = ""
+    sqltotal = ""
     if msgtype == 0:
-        sqltotal =  """select * from v_errlist  where state = 3 ORDER BY id; """
+        sqltotal = """select * from v_errlist  where state = 3 ORDER BY id; """
     elif msgtype == 1:
         sqltotal = """select * from v_errlist  where state != 3 ORDER BY id; """
     elif msgtype == 2:
@@ -739,10 +858,10 @@ def GetAllMsgInfoFile(msgtype):
         sqltotal = """select * from v_errlist  ORDER BY id; """
     print("GetCamListByStation sqltotal:", sqltotal)
     totaldata = db.select_db(sqltotal)
-    print("GetCamListByStation:",totaldata)
+    print("GetCamListByStation:", totaldata)
     random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
     filename = random_str + '_output.csv'
-    fipath = os.path.join("./files" , filename)
+    fipath = os.path.join("./files", filename)
     if len(totaldata) > 0:
         # 写入CSV文件
         with open(fipath, 'w', newline='', encoding='utf-8') as csvfile:
@@ -755,19 +874,17 @@ def GetAllMsgInfoFile(msgtype):
 
     return send_file(fipath, as_attachment=False)
 
+
 '''
    7.1 添加变电站
 '''
 @realtimealarm.route('/AddStationInfo', methods=["post"])
 def AddStationInfo():
-    print("stationname", request.form.get("stationname"))
-    print("type", request.form.get("type"))
-    print("position", request.form.get("position"))
     stationname = request.form.get("stationname")
     station_type = request.form.get("type")
     position = request.form.get("position")
     req = ReqResult()
-    if station_type == None or position == None or stationname == None:
+    if type == None or position == None or stationname == None:
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
@@ -794,16 +911,12 @@ def AddStationInfo():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
   7.2 修改变电站
 '''
 @realtimealarm.route('/ModifyStationInfo', methods=["post"])
 def ModifyStationInfo():
-    print("id", request.form.get("id"))
-    print("stationname", request.form.get("stationname"))
-    print("type", request.form.get("type"))
-    print("position", request.form.get("position"))
-
     id = request.form.get("id")
     stationname = request.form.get("stationname")
     type = request.form.get("type")
@@ -813,10 +926,11 @@ def ModifyStationInfo():
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
-    current_app.logger.info('ModifyStationInfo   id:{}, stationname:{},type:{},position:{}'.format(id, stationname, type,position))
+    current_app.logger.info(
+        'ModifyStationInfo   id:{}, stationname:{},type:{},position:{}'.format(id, stationname, type, position))
 
     sql = "update m_stationinfo set stationname='{}',type='{}',position='{}' where id={}".format(
-        stationname, type,position, id)
+        stationname, type, position, id)
     print("----ModifyStationInfo sql:", sql)
     db.execute_db(sql)
     print("----ModifyStationInfo sql over!")
@@ -826,12 +940,12 @@ def ModifyStationInfo():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     7.3 删除变电站
 '''
 @realtimealarm.route('/DeleteStationInfo', methods=["post"])
 def DeleteStationInfo():
-    print("id", request.form.get("id"))
     id = request.form.get("id")
     req = ReqResult()
     if id == None:
@@ -840,7 +954,7 @@ def DeleteStationInfo():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('DeleteStationInfo   id:{}'.format(id))
 
-    sql = "delete from m_stationinfo where id={}".format( id)
+    sql = "delete from m_stationinfo where id={}".format(id)
     print("----ModifyStationInfo sql:", sql)
     db.execute_db(sql)
     print("----ModifyStationInfo sql over!")
@@ -857,7 +971,6 @@ def DeleteStationInfo():
 @realtimealarm.route('/GetStationRoomList', methods=["post"])
 def GetStationRoomList():
     req = ReqResult()
-    print("stationid", request.form.get("stationid"))
     stationid = request.form.get("stationid")
     if stationid == None:
         req.code = 1
@@ -865,7 +978,7 @@ def GetStationRoomList():
         return json.dumps(req.__dict__, ensure_ascii=False)
     sqltotal = "select * from m_stationroom  where stationid={}".format(stationid)
     totaldata = db.select_db(sqltotal)
-    print("GetStationList:",totaldata)
+    print("GetStationList:", totaldata)
     req.code = 0
     req.msg = "读取成功"
     req.data = totaldata
@@ -878,8 +991,6 @@ def GetStationRoomList():
 '''
 @realtimealarm.route('/AddStationRoom', methods=["post"])
 def AddStationRoom():
-    print("stationid", request.form.get("stationid"))
-    print("roomname", request.form.get("roomname"))
     roomname = request.form.get("roomname")
     stationid = request.form.get("stationid")
     req = ReqResult()
@@ -903,7 +1014,7 @@ def AddStationRoom():
         'roomname': roomname,
         'optflag': 0
     }
-    print("----111111111-----",insert_dic)
+    print("----111111111-----", insert_dic)
     db.insertData("m_stationroom", insert_dic)
     print("---22222222222------")
     req.code = 0
@@ -912,15 +1023,11 @@ def AddStationRoom():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
-
 '''
   10.2 修改变电站
 '''
 @realtimealarm.route('/ModifyStationRoomInfo', methods=["post"])
 def ModifyStationRoomInfo():
-    print("id", request.form.get("id"))
-    print("stationid", request.form.get("stationid"))
-    print("roomname", request.form.get("roomname"))
     roomname = request.form.get("roomname")
     stationid = request.form.get("stationid")
     id = request.form.get("id")
@@ -943,13 +1050,11 @@ def ModifyStationRoomInfo():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
-
 '''
     10.3 删除变电站
 '''
 @realtimealarm.route('/DeleteStationRoom', methods=["post"])
 def DeleteStationRoom():
-    print("id", request.form.get("id"))
     id = request.form.get("id")
     req = ReqResult()
     if id == None:
@@ -958,7 +1063,7 @@ def DeleteStationRoom():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('DeleteStationRoom   id:{}'.format(id))
 
-    sql = "delete from m_stationroom where id={}".format( id)
+    sql = "delete from m_stationroom where id={}".format(id)
     print("----DeleteStationRoom sql:", sql)
     db.execute_db(sql)
     print("----DeleteStationRoom sql over!")
@@ -969,14 +1074,12 @@ def DeleteStationRoom():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
-
 '''
 11.DVR/NVR信息列表
 '''
 @realtimealarm.route('/GetStationDVRList', methods=["post"])
 def GetStationDVRList():
     req = ReqResult()
-    print("stationid", request.form.get("stationid"))
     stationid = request.form.get("stationid")
     if stationid == None:
         req.code = 1
@@ -993,7 +1096,7 @@ def GetStationDVRList():
         i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
         json_list.append(i)
 
-    print("GetStationDVRList:",json_list)
+    print("GetStationDVRList:", json_list)
     req.code = 0
     req.msg = "读取成功"
     req.data = json_list
@@ -1001,13 +1104,11 @@ def GetStationDVRList():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
-
 '''
    11.1 添加DVR/NVR信息
 '''
 @realtimealarm.route('/AddStationDVR', methods=["post"])
 def AddStationDVR():
-
     dvr_name = request.form.get("dvr_name")
     ip = request.form.get("ip")
     port = request.form.get("port")
@@ -1016,7 +1117,7 @@ def AddStationDVR():
     stationid = request.form.get("stationid")
 
     req = ReqResult()
-    if dvr_name == None or ip == None\
+    if dvr_name == None or ip == None \
             or port == None or user == None or pwd == None or stationid == None:
         req.code = 1
         req.msg = "参数不正确"
@@ -1046,14 +1147,13 @@ def AddStationDVR():
         'stationid': stationid,
         'create_time': nowTime
     }
-    print("----111111111-----",insert_dic)
+    print("----111111111-----", insert_dic)
     db.insertData("m_dvr", insert_dic)
     print("---22222222222------")
     req.code = 0
     req.msg = "success"
 
     return json.dumps(req.__dict__, ensure_ascii=False)
-
 
 
 '''
@@ -1070,7 +1170,7 @@ def ModifyStationDVR():
     stationid = request.form.get("stationid")
 
     req = ReqResult()
-    if dvr_id == None or dvr_name == None or ip == None\
+    if dvr_id == None or dvr_name == None or ip == None \
             or port == None or user == None or pwd == None or stationid == None:
         req.code = 1
         req.msg = "参数不正确"
@@ -1090,12 +1190,12 @@ def ModifyStationDVR():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     11.3 删除DVR/NVR信息
 '''
 @realtimealarm.route('/DeleteStationDVR', methods=["post"])
 def DeleteStationDVR():
-    print("dvr_id", request.form.get("dvr_id"))
     dvr_id = request.form.get("dvr_id")
     req = ReqResult()
     if id == None:
@@ -1104,7 +1204,7 @@ def DeleteStationDVR():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('DeleteStationRoom   dvr_id:{}'.format(dvr_id))
 
-    sql = "delete from m_dvr where dvr_id={}".format( dvr_id)
+    sql = "delete from m_dvr where dvr_id={}".format(dvr_id)
     print("----DeleteStationDVR sql:", sql)
     db.execute_db(sql)
     print("----DeleteStationDVR sql over!")
@@ -1136,15 +1236,12 @@ def GetStationDVRByCamID():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
-
-
 '''
 12.DVR/NVR 摄像头信息列表
 '''
 @realtimealarm.route('/GetStationDVRCamList', methods=["post"])
 def GetStationDVRCamList():
     req = ReqResult()
-    print("dvr_id", request.form.get("dvr_id"))
     dvr_id = request.form.get("dvr_id")
     if dvr_id == None:
         req.code = 1
@@ -1158,7 +1255,7 @@ def GetStationDVRCamList():
         i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
         json_list.append(i)
 
-    print("GetStationDVRList:",json_list)
+    print("GetStationDVRList:", json_list)
     req.code = 0
     req.msg = "读取成功"
     req.data = json_list
@@ -1166,13 +1263,11 @@ def GetStationDVRCamList():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
-
 '''
    12.1 添加DVR/NVR 摄像头信息
 '''
 @realtimealarm.route('/AddStationDVRCam', methods=["post"])
 def AddStationDVRCam():
-
     camera_name = request.form.get("camera_name")
     dvr_id = request.form.get("dvr_id")
     channel = request.form.get("channel")
@@ -1183,7 +1278,7 @@ def AddStationDVRCam():
     optserial = request.form.get("optserial")
 
     req = ReqResult()
-    if camera_name == None or dvr_id == None\
+    if camera_name == None or dvr_id == None \
             or channel == None or roomid == None or realserialnum == None:
         req.code = 1
         req.msg = "参数不正确"
@@ -1215,7 +1310,7 @@ def AddStationDVRCam():
         'optserial': optserial
 
     }
-    print("----111111111-----",insert_dic)
+    print("----111111111-----", insert_dic)
     db.insertData("m_camera", insert_dic)
     print("---22222222222------")
     req.code = 0
@@ -1238,17 +1333,17 @@ def ModifyStationDVRCam():
     optipaddr = request.form.get("optipaddr")
     optserial = request.form.get("optserial")
     req = ReqResult()
-    if camera_id == None or camera_name == None or dvr_id == None\
+    if camera_id == None or camera_name == None or dvr_id == None \
             or channel == None or roomid == None or realserialnum == None:
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('AddStationDVRCam   camera_id:{},camera_name:{},dvr_id:{},channel:{},'
                             'roomid:{},realserialnum:{}'
-                            .format(camera_id,camera_name, dvr_id, channel, roomid, realserialnum))
+                            .format(camera_id, camera_name, dvr_id, channel, roomid, realserialnum))
 
     sql = "update m_camera set camera_name='{}',dvr_id='{}' ,channel='{}',roomid='{}',realserialnum='{}',optipaddr='{}',optserial='{}' where camera_id={}".format(
-        camera_name, dvr_id, channel, roomid, realserialnum,optipaddr,optserial,  camera_id)
+        camera_name, dvr_id, channel, roomid, realserialnum, optipaddr, optserial, camera_id)
     print("----ModifyStationDVRCam sql:", sql)
     db.execute_db(sql)
     print("----ModifyStationDVRCam sql over!")
@@ -1258,12 +1353,12 @@ def ModifyStationDVRCam():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     12.3 删除DVR/NVR摄像头信息
 '''
 @realtimealarm.route('/DeleteStationDVRCam', methods=["post"])
 def DeleteStationDVRCam():
-    print("camera_id", request.form.get("camera_id"))
     camera_id = request.form.get("camera_id")
     req = ReqResult()
     if camera_id == None:
@@ -1272,7 +1367,7 @@ def DeleteStationDVRCam():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('DeleteStationDVRCam   camera_id:{}'.format(camera_id))
 
-    sql = "delete from m_camera where camera_id={}".format( camera_id)
+    sql = "delete from m_camera where camera_id={}".format(camera_id)
     print("----DeleteStationDVRCam sql:", sql)
     db.execute_db(sql)
     print("----DeleteStationDVRCam sql over!")
@@ -1281,8 +1376,6 @@ def DeleteStationDVRCam():
     req.msg = "success"
 
     return json.dumps(req.__dict__, ensure_ascii=False)
-
-
 
 
 '''
@@ -1295,7 +1388,7 @@ def GetStationDevTypeList():
     sqltotal = "select * from m_devbaseinfo"
     totaldata = db.select_db(sqltotal)
 
-    print("GetStationDVRList:",totaldata)
+    print("GetStationDVRList:", totaldata)
     req.code = 0
     req.msg = "读取成功"
     req.data = totaldata
@@ -1303,13 +1396,11 @@ def GetStationDevTypeList():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
-
 '''
    13.1 添加设备机器类型
 '''
 @realtimealarm.route('/AddStationDevType', methods=["post"])
 def AddStationDevType():
-
     devmodel = request.form.get("devmodel")
     cpu = request.form.get("cpu")
     mem = request.form.get("mem")
@@ -1320,7 +1411,7 @@ def AddStationDevType():
     videotype = request.form.get("videotype")
 
     req = ReqResult()
-    if devmodel == None or cpu == None\
+    if devmodel == None or cpu == None \
             or mem == None or length == None or width == None \
             or high == None or lannum == None or videotype == None:
         req.code = 1
@@ -1351,7 +1442,7 @@ def AddStationDevType():
         'lannum': lannum,
         'videotype': videotype
     }
-    print("----111111111-----",insert_dic)
+    print("----111111111-----", insert_dic)
     db.insertData("m_devbaseinfo", insert_dic)
     print("---22222222222------")
     req.code = 0
@@ -1376,7 +1467,7 @@ def ModifyStationDevType():
     videotype = request.form.get("videotype")
 
     req = ReqResult()
-    if devmodel == None or cpu == None or id == None\
+    if devmodel == None or cpu == None or id == None \
             or mem == None or length == None or width == None \
             or high == None or lannum == None or videotype == None:
         req.code = 1
@@ -1384,11 +1475,11 @@ def ModifyStationDevType():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('ModifyStationDevType   id:{},devmodel:{},cpu:{},mem:{},'
                             'length:{},width:{} high:{},lannum:{},videotype:{},'
-                            .format(id,devmodel, cpu, mem, length, width,
+                            .format(id, devmodel, cpu, mem, length, width,
                                     high, lannum, videotype))
 
     sql = "update m_devbaseinfo set devmodel='{}',cpu='{}' ,mem='{}',length='{}',width='{}',high='{}',lannum='{}',videotype='{}' where id={}".format(
-        devmodel, cpu, mem, length, width, high, lannum, videotype,id)
+        devmodel, cpu, mem, length, width, high, lannum, videotype, id)
     print("----ModifyStationDevType sql:", sql)
     db.execute_db(sql)
     print("----ModifyStationDevType sql over!")
@@ -1397,6 +1488,7 @@ def ModifyStationDevType():
     req.msg = "success"
 
     return json.dumps(req.__dict__, ensure_ascii=False)
+
 
 '''
     13.3 删除设备机器类型
@@ -1412,7 +1504,7 @@ def DeleteStationDevType():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('DeleteStationDevType   id:{}'.format(id))
 
-    sql = "delete from m_devbaseinfo where id={}".format( id)
+    sql = "delete from m_devbaseinfo where id={}".format(id)
     print("----DeleteStationDevType sql:", sql)
     db.execute_db(sql)
     print("----DeleteStationDevType sql over!")
@@ -1433,7 +1525,7 @@ def GetStationDetectDevList():
     sqltotal = "select * from m_devinfo"
     totaldata = db.select_db(sqltotal)
 
-    print("GetStationDevList:",totaldata)
+    print("GetStationDetectDevList:", totaldata)
     req.code = 0
     req.msg = "读取成功"
     req.data = totaldata
@@ -1474,6 +1566,8 @@ def GetStationDetectDevListByStationId():
 '''
    14.1 添加设备
 '''
+
+
 @realtimealarm.route('/AddStationDetectDev', methods=["post"])
 def AddStationDetectDev():
     devid = request.form.get("devid")
@@ -1502,7 +1596,7 @@ def AddStationDetectDev():
         'address': address,
         'modelid': modelid
     }
-    print("----111111111-----",insert_dic)
+    print("----111111111-----", insert_dic)
     db.insertData("m_devinfo", insert_dic)
     print("---22222222222------")
     req.code = 0
@@ -1514,6 +1608,8 @@ def AddStationDetectDev():
 '''
    14.2 修改设备
 '''
+
+
 @realtimealarm.route('/ModifyStationDetectDev', methods=["post"])
 def ModifyStationDetectDev():
     id = request.form.get("id")
@@ -1522,16 +1618,16 @@ def ModifyStationDetectDev():
     modelid = request.form.get("modelid")
 
     req = ReqResult()
-    if id == None or devid == None or address == None\
+    if id == None or devid == None or address == None \
             or modelid == None:
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('ModifyStationDetectDev   id:{},devid:{},address:{},modelid:{},'
-                            .format(id,devid, address, modelid))
+                            .format(id, devid, address, modelid))
 
     sql = "update m_devinfo set devid='{}',address='{}' ,modelid='{}' where id={}".format(
-        devid, address, modelid,id)
+        devid, address, modelid, id)
     print("----ModifyStationDetectDev sql:", sql)
     db.execute_db(sql)
     print("----ModifyStationDetectDev sql over!")
@@ -1541,12 +1637,14 @@ def ModifyStationDetectDev():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     14.3 删除设备
 '''
+
+
 @realtimealarm.route('/DeleteStationDetectDev', methods=["post"])
 def DeleteStationDetectDev():
-    print("id", request.form.get("id"))
     id = request.form.get("id")
     req = ReqResult()
     if id == None:
@@ -1565,13 +1663,15 @@ def DeleteStationDetectDev():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
 15.检测设备通道参数列表
 '''
+
+
 @realtimealarm.route('/GetDetectDevChParamsList', methods=["post"])
 def GetDetectDevChParamsList():
     req = ReqResult()
-    print("devid", request.form.get("devid"))
     devid = request.form.get("devid")
     if devid == None:
         req.code = 1
@@ -1580,15 +1680,18 @@ def GetDetectDevChParamsList():
     current_app.logger.info('GetDetectDevChParamsList   devid:{}'.format(devid))
     sqltotal = "select * from m_devrunconfig  where devid='{}' order by devchannel".format(devid)
     totaldata = db.select_db(sqltotal)
-    print("GetDetectDevChParamsList:",totaldata)
+    print("GetDetectDevChParamsList:", totaldata)
     req.code = 0
     req.msg = "读取成功"
     req.data = totaldata
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
    15.1添加检测设备通道参数
 '''
+
+
 @realtimealarm.route('/AddDetectDevChParams', methods=["post"])
 def AddDetectDevChParams():
     devid = request.form.get("devid")
@@ -1607,16 +1710,16 @@ def AddDetectDevChParams():
     runenable = request.form.get("runenable")
 
     req = ReqResult()
-    if devid == None or devchannel == None  or dvrinfoid == None or dvrchannel == None \
+    if devid == None or devchannel == None or dvrinfoid == None or dvrchannel == None \
             or state == None or ThredMultiple == None or SelThredMultipleEnable == None \
-            or LearnValOne == None or ThredMultipleOne == None or LearnValTwo == None\
+            or LearnValOne == None or ThredMultipleOne == None or LearnValTwo == None \
             or ThredMultipleTwo == None or LearnValThree == None or ThredMultipleThree == None or runenable == None:
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('AddDetectDevChParams   devid:{},devchannel:{},dvrinfoid:{},dvrchannel:{},'
                             'state:{},ThredMultiple:{},SelThredMultipleEnable:{},LearnValOne:{},'
-                            'ThredMultipleOne:{},LearnValTwo:{},ThredMultipleTwo:{},LearnValThree:{},'                            
+                            'ThredMultipleOne:{},LearnValTwo:{},ThredMultipleTwo:{},LearnValThree:{},'
                             'ThredMultipleThree:{},runenable:{}'
                             .format(devid, devchannel, dvrinfoid, dvrchannel, state,
                                     ThredMultiple, SelThredMultipleEnable, LearnValOne, ThredMultipleOne, LearnValTwo,
@@ -1648,7 +1751,7 @@ def AddDetectDevChParams():
         'ThredMultipleThree': ThredMultipleThree,
         'runenable': runenable
     }
-    print("----111111111-----",insert_dic)
+    print("----111111111-----", insert_dic)
     db.insertData("m_devrunconfig", insert_dic)
     print("---22222222222------")
     req.code = 0
@@ -1656,9 +1759,12 @@ def AddDetectDevChParams():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
    15.2 修改检测设备通道参数
 '''
+
+
 @realtimealarm.route('/ModifyDetectDevChParams', methods=["post"])
 def ModifyDetectDevChParams():
     id = request.form.get("id")
@@ -1678,28 +1784,28 @@ def ModifyDetectDevChParams():
     runenable = request.form.get("runenable")
 
     req = ReqResult()
-    if id == None or devid == None or devchannel == None  or dvrinfoid == None or dvrchannel == None \
+    if id == None or devid == None or devchannel == None or dvrinfoid == None or dvrchannel == None \
             or state == None or ThredMultiple == None or SelThredMultipleEnable == None \
-            or LearnValOne == None or ThredMultipleOne == None or LearnValTwo == None\
+            or LearnValOne == None or ThredMultipleOne == None or LearnValTwo == None \
             or ThredMultipleTwo == None or LearnValThree == None or ThredMultipleThree == None or runenable == None:
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('ModifyDetectDevChParams   id:{},devid:{},devchannel:{},dvrinfoid:{},dvrchannel:{},'
                             'state:{},ThredMultiple:{},SelThredMultipleEnable:{},LearnValOne:{},'
-                            'ThredMultipleOne:{},LearnValTwo:{},ThredMultipleTwo:{},LearnValThree:{},'                            
+                            'ThredMultipleOne:{},LearnValTwo:{},ThredMultipleTwo:{},LearnValThree:{},'
                             'ThredMultipleThree:{},runenable:{}'
-                            .format(id,devid, devchannel, dvrinfoid, dvrchannel, state,
+                            .format(id, devid, devchannel, dvrinfoid, dvrchannel, state,
                                     ThredMultiple, SelThredMultipleEnable, LearnValOne, ThredMultipleOne, LearnValTwo,
                                     ThredMultipleTwo, LearnValThree, ThredMultipleThree, runenable))
 
     sql = "update m_devrunconfig set devid='{}',devchannel='{}' ,dvrinfoid='{}',dvrchannel='{}'," \
           "state='{}',ThredMultiple='{}',SelThredMultipleEnable='{}',LearnValOne='{}',ThredMultipleOne='{}' ," \
           "LearnValTwo='{}',ThredMultipleTwo='{}',LearnValThree='{}' ,ThredMultipleThree='{}' ,runenable='{}'" \
-          " where id='{}'"\
-        .format( devid, devchannel, dvrinfoid, dvrchannel,
-                 state, ThredMultiple,SelThredMultipleEnable, LearnValOne, ThredMultipleOne,
-                 LearnValTwo, ThredMultipleTwo, LearnValThree,ThredMultipleThree,runenable, id)
+          " where id='{}'" \
+        .format(devid, devchannel, dvrinfoid, dvrchannel,
+                state, ThredMultiple, SelThredMultipleEnable, LearnValOne, ThredMultipleOne,
+                LearnValTwo, ThredMultipleTwo, LearnValThree, ThredMultipleThree, runenable, id)
 
     print("----ModifyStationDVRCam sql:", sql)
     db.execute_db(sql)
@@ -1710,9 +1816,12 @@ def ModifyDetectDevChParams():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     15.3 删除检测设备通道参数
 '''
+
+
 @realtimealarm.route('/DeleteDetectDevChParams', methods=["post"])
 def DeleteDetectDevChParams():
     print("id", request.form.get("id"))
@@ -1724,7 +1833,7 @@ def DeleteDetectDevChParams():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('DeleteDetectDevChParams   id:{}'.format(id))
 
-    sql = "delete from m_devrunconfig where id={}".format( id)
+    sql = "delete from m_devrunconfig where id={}".format(id)
     print("----DeleteDetectDevChParams sql:", sql)
     db.execute_db(sql)
     print("----DeleteDetectDevChParams sql over!")
@@ -1734,9 +1843,12 @@ def DeleteDetectDevChParams():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
 16.检测设备温度信息列表
 '''
+
+
 @realtimealarm.route('/GetDetectDevTempList', methods=["post"])
 def GetDetectDevTempList():
     req = ReqResult()
@@ -1750,19 +1862,21 @@ def GetDetectDevTempList():
         if i["updatetime"] != None:
             i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
         json_list.append(i)
-    print("GetDetectDevTempList:",json_list)
+    print("GetDetectDevTempList:", json_list)
     req.code = 0
     req.msg = "读取成功"
     req.data = json_list
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
 17.检测设备温度信息
 '''
+
+
 @realtimealarm.route('/GetDetectDevTempBydevid', methods=["post"])
 def GetDetectDevTempBydevid():
     req = ReqResult()
-    print("devid", request.form.get("devid"))
     devid = request.form.get("devid")
     if devid == None:
         req.code = 1
@@ -1778,15 +1892,18 @@ def GetDetectDevTempBydevid():
             i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
         json_list.append(i)
 
-    print("GetDetectDevTempBydevid:",json_list)
+    print("GetDetectDevTempBydevid:", json_list)
     req.code = 0
     req.msg = "读取成功"
     req.data = json_list
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
 18.检测设备状态列表
 '''
+
+
 @realtimealarm.route('/GetDetectDevStateList', methods=["post"])
 def GetDetectDevStateList():
     req = ReqResult()
@@ -1794,15 +1911,21 @@ def GetDetectDevStateList():
     current_app.logger.info('GetDetectDevStateList ')
     sqltotal = "select * from m_devstate"
     totaldata = db.select_db(sqltotal)
-    print("GetDetectDevStateList:",totaldata)
+    for i in totaldata:
+        i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
+
+    print("GetDetectDevStateList:", totaldata)
     req.code = 0
     req.msg = "读取成功"
     req.data = totaldata
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
 19.检测设备状态
 '''
+
+
 @realtimealarm.route('/GetDetectDevStateBydevid', methods=["post"])
 def GetDetectDevStateBydevid():
     req = ReqResult()
@@ -1820,33 +1943,147 @@ def GetDetectDevStateBydevid():
         if i["updatetime"] != None:
             i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
         json_list.append(i)
-    print("GetDetectDevStateBydevid:",json_list)
+    print("GetDetectDevStateBydevid:", json_list)
     req.code = 0
     req.msg = "读取成功"
     req.data = totaldata
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
+'''
+    20. 获取维护信息列表  
+'''
+
+
+@realtimealarm.route('/GetMaintainList', methods=["post"])
+def GetMaintainList():
+    sqltotal = "select * from m_maintain aa  LEFT JOIN  m_stationinfo bb on aa.stationid =  bb.id"
+    totaldata = db.select_db(sqltotal)
+    for i in totaldata:
+        i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")
+
+    print("GetMaintainList:", totaldata)
+
+    req = ReqResult()
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
 
 '''
-20.获取巡视计划表
+   20.1 添加维护信息 
 '''
+
+
+@realtimealarm.route('/AddMaintainInfo', methods=["post"])
+def AddMaintainInfo():
+    req = ReqResult()
+    stationid = request.form.get("stationid")
+    info = request.form.get("info")
+    if stationid == None or info == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    TableName = "m_maintain"
+    select_maxid_sql = 'select max(id) as maxid from {}'.format(TableName)
+    select_maxid_result = db.select_db(select_maxid_sql)
+    id = 0
+    if select_maxid_result[0]['maxid'] is None:
+        id = 1
+    else:
+        id = int(select_maxid_result[0]['maxid']) + 1
+    insert_dic = {
+        'id': id,
+        'stationid': stationid,
+        'info': info,
+        'updatetime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    db.insertData(TableName, insert_dic)
+    req1 = ReqResult()
+    req1.code = 0
+    req1.msg = "success"
+
+    return json.dumps(req1.__dict__, ensure_ascii=False)
+
+
+'''
+    20.2 删除维护信息 
+'''
+
+
+@realtimealarm.route('/DelMaintainInfo', methods=["post"])
+def DelMaintainInfo():
+    id = request.form.get("id")
+    req = ReqResult()
+    if id == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    current_app.logger.info('DeleteStationInfo   id:{}'.format(id))
+
+    sql = "delete from m_maintain where id={}".format(id)
+    print("----DeleteModelInfo sql:", sql)
+    db.execute_db(sql)
+    print("----DeleteModelInfo sql over!")
+
+    req.code = 0
+    req.msg = "success"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   20.3. 修改维护信息
+'''
+
+
+@realtimealarm.route('/UpdateMaintainInfo', methods=["post"])
+def UpdateMaintainInfo():
+    req = ReqResult()
+    id = request.form.get("id")
+    stationid = request.form.get("stationid")
+    info = request.form.get("info")
+    if stationid == None or info == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    datestr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_app.logger.info('UpdateMsgFlag   id:{},stationid:{},info:{}'.format(id, stationid, info))
+    sql = "update m_maintain set stationid={},info='{}',updatetime='{}' where id={}".format(stationid, info, datestr,
+                                                                                            id)
+    db.execute_db(sql)
+    req.code = 0
+    req.msg = "success"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+21.获取巡视计划表
+'''
+
+
 @realtimealarm.route('/GetVisitationPlan', methods=["post"])
 def GetVisitationPlan():
     req = ReqResult()
     current_app.logger.info('GetVisitationPlan ')
     sqltotal = "select * from m_visitationplan"
     totaldata = db.select_db(sqltotal)
-    print("GetVisitationPlan:",totaldata)
     for i in totaldata:
         if i["predatetime"] is not None:
             i["predatetime"] = i["predatetime"].strftime("%Y-%m-%d %H:%M:%S")
         if i["createtime"] is not None:
             i["createtime"] = i["createtime"].strftime("%Y-%m-%d %H:%M:%S")
+
+    print("GetVisitationPlan:", totaldata)
     req.code = 0
     req.msg = "读取成功"
     req.data = totaldata
     return json.dumps(req.__dict__, ensure_ascii=False)
+
 
 '''
 21.0获取巡视当前执行表
@@ -1993,25 +2230,32 @@ def DeleteVisitationPlan():
 
 @realtimealarm.route('/ModifyVisitationPlan', methods=["post"])
 def ModifyVisitationPlan():
-    print("taskplantype", request.form.get("taskplantype"))
-    print("taskplanstate", request.form.get("taskplanstate"))
-    print("taskpanh", request.form.get("taskpanh"))
-    print("taskplanf", request.form.get("taskplanf"))
-    print("devid", request.form.get("devid"))
+    id = request.form.get("id")
+    taskplanname = request.form.get("taskplanname")
+    taskplanclass = request.form.get("taskplanclass")
     taskplantype = request.form.get("taskplantype")
     taskplanstate = request.form.get("taskplanstate")
     taskpanh = request.form.get("taskpanh")
     taskplanf = request.form.get("taskplanf")
     taskplanm = request.form.get("taskplanm")
-
     req = ReqResult()
-    current_app.logger.info('ModifyVisitationPlan taskplantype:{}，taskplanstate:{}，taskpanh:{}，taskplanf:{}，taskplanm:{}'
-                            .format(taskplantype,taskplanstate,taskpanh,taskplanf,taskplanm))
 
-    sql = "update m_visitationplan set taskplantype='{}',taskplanstate='{}' ,taskpanh='{}',taskplanf='{}'," \
-          "taskplanm='{}'  where id='{}'"\
-        .format( taskplantype, taskplanstate, taskpanh, taskplanf,
-                 taskplanm, 1)
+    if id == None or taskplanname == None or taskplanclass == None or \
+            taskplantype == None or taskplanstate == None or taskpanh == None \
+            or taskplanf == None or taskplanm == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    current_app.logger.info(
+        'ModifyVisitationPlan taskplantype:{}，taskplanstate:{}，taskpanh:{}，taskplanf:{}，taskplanm:{}'
+        .format(taskplantype, taskplanstate, taskpanh, taskplanf, taskplanm))
+
+    sql = "update m_visitationplan set taskplanname='{}',taskplanclass='{}'," \
+          "taskplantype='{}',taskplanstate='{}' ,taskpanh='{}',taskplanf='{}'," \
+          "taskplanm='{}'  where id={}" \
+        .format(taskplanname, taskplanclass, taskplantype, taskplanstate, taskpanh, taskplanf,
+                taskplanm, id)
 
     print("----ModifyVisitationPlan sql:", sql)
     db.execute_db(sql)
@@ -2023,6 +2267,9 @@ def ModifyVisitationPlan():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
+'''
+21.3 修改计划状态
+'''
 
 
 @realtimealarm.route('/ModifyVisitationPlanState', methods=["post"])
@@ -2473,8 +2720,6 @@ def ModifyAlarmLevel():
 '''
 
 
-
-
 def GetAlarmInfoFromDB(alarmid):
     sql = "select * from v_alarminfo where id={} ".format(alarmid)
     listdata = db.select_db(sql)
@@ -2501,33 +2746,37 @@ def GetAlarmInfoFromDB(alarmid):
         req.data["imgs"] = imglist
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
     3.获取告警详情
 '''
+
+
 @realtimealarm.route('/GetAlarmInfo', methods=["post"])
 def GetAlarmInfo():
-    print("token", request.form.get("token"))
     print("id", request.form.get("id"))
     alarmid = request.form.get("id")
     token = request.form.get("token")
-    current_app.logger.info('GetAlarmInfo   token:{},alarmid:{}'.format(token,alarmid))
+    current_app.logger.info('GetAlarmInfo   token:{},alarmid:{}'.format(token, alarmid))
     return GetAlarmInfoFromDB(alarmid)
+
 
 '''
     4.确定告警
 '''
+
+
 @realtimealarm.route('/AlarmInfoHandler', methods=["post"])
 def AlarmInfoHandler():
-    print("token", request.form.get("token"))
     print("id", request.form.get("id"))
     print("type", request.form.get("type"))
     alarmid = request.form.get("id")
     type = request.form.get("type")
     token = request.form.get("token")
-    current_app.logger.info('AlarmInfoHandler   token:{},alarmid:{},type:{}'.format(token,alarmid,type))
+    current_app.logger.info('AlarmInfoHandler   token:{},alarmid:{},type:{}'.format(token, alarmid, type))
 
-    sql = "update m_task set opsts={},errortype={} where task_id={} ".format(20,type,alarmid)
-    print("----AlarmInfoHandler sql:",sql)
+    sql = "update m_task set opsts={},errortype={} where task_id={} ".format(20, type, alarmid)
+    print("----AlarmInfoHandler sql:", sql)
     db.execute_db(sql)
     print("----AlarmInfoHandler sql over!")
 
@@ -2535,16 +2784,18 @@ def AlarmInfoHandler():
 
     return json.dumps(req.__dict__)
 
+
 '''
     4.1设置告警已读状态
 '''
+
+
 @realtimealarm.route('/AlarmInfoReadHandler', methods=["post"])
 def AlarmInfoReadHandler():
-    print("token", request.form.get("token"))
     print("id", request.form.get("id"))
     alarmid = request.form.get("id")
     token = request.form.get("token")
-    current_app.logger.info('AlarmInfoReadHandler   token:{},alarmid:{}'.format(token,alarmid))
+    current_app.logger.info('AlarmInfoReadHandler   token:{},alarmid:{}'.format(token, alarmid))
     sql = "update m_task set opsts={} where task_id={} ".format(15, alarmid)
     db.execute_db(sql)
 
@@ -2556,9 +2807,10 @@ def AlarmInfoReadHandler():
 '''
     4.2设置告警全部已读状态
 '''
+
+
 @realtimealarm.route('/AllAlarmInfoReadHandler', methods=["post"])
 def AllAlarmInfoReadHandler():
-    print("token", request.form.get("token"))
     token = request.form.get("token")
     current_app.logger.info('AllAlarmInfoReadHandler   token:{}'.format(token))
     sql = "update m_task set opsts={} where opsts=10 ".format(15)
@@ -2572,10 +2824,11 @@ def AllAlarmInfoReadHandler():
 '''
     5.确定全部告警
 '''
+
+
 @realtimealarm.route('/AllAlarmInfoHandler', methods=["post"])
 def AllAlarmInfoHandler():
-    print("token", request.form.get("token"))
-    token=request.form.get("token")
+    token = request.form.get("token")
     current_app.logger.info('AllAlarmInfoHandler   token:{}'.format(token))
     sql = "update m_task set opsts={} where opsts != 20 ".format(20)
     db.execute_db(sql)
@@ -2592,6 +2845,8 @@ def get_zip_file(input_path, result):
             get_zip_file(input_path + '/' + file, result)
         else:
             result.append(input_path + '/' + file)
+
+
 def zip_file_path(input_path, output_path, output_name):
     f = zipfile.ZipFile(output_path + '/' + output_name, 'w', zipfile.ZIP_DEFLATED)
     filelists = []
@@ -2602,22 +2857,24 @@ def zip_file_path(input_path, output_path, output_name):
     f.close()
     return output_path + r"/" + output_name
 
+
 '''
     6.告警导出
 '''
+
+
 @realtimealarm.route('/GetAlarmInfoFile', methods=["post"])
 def GetAlarmInfoFile():
-    print("token", request.form.get("token"))
     print("id", request.form.get("id"))
     alarmid = request.form.get("id")
     token = request.form.get("token")
-    current_app.logger.info('GetAlarmInfoFile   token:{},alarmid:{}'.format(token,alarmid))
+    current_app.logger.info('GetAlarmInfoFile   token:{},alarmid:{}'.format(token, alarmid))
     strinfo = GetAlarmInfoFromDB(alarmid)
-    print("strinfo:",strinfo)
+    print("strinfo:", strinfo)
     objinfo = json.loads(strinfo)
-    tmpdir = '{}-{}-{}'.format(alarmid,time.strftime('%Y-%m-%d-%H-%M-%S'), token)
-    tmppath = './tmpfiles/'+tmpdir
-    print("--tmppath:",tmppath)
+    tmpdir = '{}-{}-{}'.format(alarmid, time.strftime('%Y-%m-%d-%H-%M-%S'), token)
+    tmppath = './tmpfiles/' + tmpdir
+    print("--tmppath:", tmppath)
     os.mkdir(tmppath)
     f = None
     try:
@@ -2630,17 +2887,17 @@ def GetAlarmInfoFile():
     imgcnt = 0
     print(objinfo, type(objinfo))
     for imgfile in objinfo["data"]["imgs"]:
-        if os.path.isfile(imgfile) :
-            shutil.copy(imgfile, tmppath+"/{}.bmp".format(imgcnt))
+        if os.path.isfile(imgfile):
+            shutil.copy(imgfile, tmppath + "/{}.bmp".format(imgcnt))
             imgcnt += 1
 
     hisvideo = objinfo["data"]["hisvideo"]
     if os.path.isfile(hisvideo):
         shutil.copy(hisvideo, tmppath + "/error.mp4")
 
-    zipfilea = zip_file_path(tmppath, "./tmpfiles", tmpdir+".zip")
+    zipfilea = zip_file_path(tmppath, "./tmpfiles", tmpdir + ".zip")
     req = ReqResult()
-    req.data = "./tmpfiles"+"/"+tmpdir+".zip"
+    req.data = "./tmpfiles" + "/" + tmpdir + ".zip"
 
     shutil.rmtree(tmppath)
 
@@ -2650,10 +2907,11 @@ def GetAlarmInfoFile():
 '''
     7.获取变电站列表
 '''
+
+
 @realtimealarm.route('/GetStationList11', methods=["post"])
 def GetStationList11():
-    print("token", request.form.get("token"))
-    token=request.form.get("token")
+    token = request.form.get("token")
     current_app.logger.info('GetStationList   token:{}'.format(token))
 
     sql = "select id, stationname as station from m_stationinfo"
@@ -2669,18 +2927,21 @@ def GetStationList11():
 
     return json.dumps(req.__dict__)
 
+
 '''
     8.获取站内摄像头信息
 '''
+
+
 @realtimealarm.route('/GetStationCamList11', methods=["post"])
 def GetStationCamList11():
-    print("token", request.form.get("token"))
     print("stationid", request.form.get("stationid"))
     stationid = request.form.get("stationid")
     token = request.form.get("token")
-    current_app.logger.info('GetStationCamList   token:{},stationid:{}'.format( token, stationid))
+    current_app.logger.info('GetStationCamList   token:{},stationid:{}'.format(token, stationid))
 
-    sql = "select bb.camera_id as id, bb.camera_name as cam from m_stationroom aa LEFT JOIN m_camera  bb on aa.id = bb.roomid where aa.stationid={}".format(stationid)
+    sql = "select bb.camera_id as id, bb.camera_name as cam from m_stationroom aa LEFT JOIN m_camera  bb on aa.id = bb.roomid where aa.stationid={}".format(
+        stationid)
     listdata = db.select_db(sql)
     print(listdata)
     req = ReqResult()
@@ -2692,6 +2953,7 @@ def GetStationCamList11():
 
     return json.dumps(req.__dict__)
 
+
 '''
 "token": "111111111111111",
 “starttime”:”2020-06-06 06:06:06”,
@@ -2702,6 +2964,8 @@ def GetStationCamList11():
 '''
     9.手动创建检测任务
 '''
+
+
 @realtimealarm.route('/CreateDetectTask', methods=["post"])
 def CreateDetectTask():
     req = ReqResult()
@@ -2716,10 +2980,10 @@ def CreateDetectTask():
     10.获取异常分类列表
 
 '''
+
+
 @realtimealarm.route('/GetExceptClassList', methods=['post'])
 def GetExceptClassList():
-
-    print("token", request.form.get("token"))
     token = request.form.get("token")
     current_app.logger.info('GetExceptClassList   token:{},'.format(token))
     TableName = 'm_taskalarm'
@@ -2735,15 +2999,15 @@ def GetExceptClassList():
 
     return json.dumps(req.__dict__)
 
+
 '''
     11.增加异常分类列表
 
 '''
 
+
 @realtimealarm.route('/AddExcept', methods=['post'])
 def AddExcept():
-
-    print("token", request.form.get("token"))
     print("alarmtype", request.form.get("alarmtype"))  # 新增的异常名称
 
     token = request.form.get("token")
@@ -2768,7 +3032,7 @@ def AddExcept():
 
         alarmtype_dic = {}
         alarmtype_dic['id'] = max_id + 1
-        alarmtype_dic['alarmtype'] = alarmtype   # 传递值的方式--->  {'id':max_id+1,'alarmtype':alarmtype}
+        alarmtype_dic['alarmtype'] = alarmtype  # 传递值的方式--->  {'id':max_id+1,'alarmtype':alarmtype}
         print(alarmtype_dic)
         # 插入
         insert_alarmtype = db.insertData(TableName, alarmtype_dic)
@@ -2786,14 +3050,14 @@ def AddExcept():
         AlterExceptClassList
 '''
 
-@realtimealarm.route('/AlterExceptClassList', methods=['post'])
 
+@realtimealarm.route('/AlterExceptClassList', methods=['post'])
 def AlterExceptClassList():
     # print('token', request.form.get('token'))
     token = request.form.get('token')
     id = request.form.get('id')
     alarmtype = request.form.get('alarmtype')
-    current_app.logger.info('AlterExceptClassList   token:{}, id:{},alarmtype:{}'.format(token,id,alarmtype))
+    current_app.logger.info('AlterExceptClassList   token:{}, id:{},alarmtype:{}'.format(token, id, alarmtype))
 
     # 接收参数
     TableName = 'm_taskalarm'
@@ -2815,6 +3079,7 @@ def AlterExceptClassList():
         new_alarmtype_dic['alarmtype'] = alarmtype
         db.updateData(TableName, new_alarmtype_dic, wheresql)
     return json.dumps(req.__dict__)
+
 
 '''以下的是传递报警信息'''
 # def AlterExceptClassList():
@@ -2861,6 +3126,7 @@ def AlterExceptClassList():
 
 '''
 
+
 @realtimealarm.route('/SetExcepAlarmClass', methods=['post'])
 def SetExcepAlarmClass():
     ''''
@@ -2871,7 +3137,6 @@ def SetExcepAlarmClass():
     error_id = request.form.get('error_id')
     current_app.logger.info('SetExcepAlarmClass   token:{},task_id:{},error_id:{}'.format(token, task_id, error_id))
     req = ReqResult()
-
 
     TableName = 'm_taskalarmtype'
 
@@ -2886,11 +3151,11 @@ def SetExcepAlarmClass():
     print(select_maxid_result)
 
     if len(select_result) == 0:  # 查不到,则插入
-        if select_maxid_result[0]['maxid'] ==None:
+        if select_maxid_result[0]['maxid'] == None:
             select_maxid_result[0]['maxid'] = 0
 
         insert_dic = {
-            'id':select_maxid_result[0]['maxid']+1,
+            'id': select_maxid_result[0]['maxid'] + 1,
             'task_id': task_id,
             'errorid': error_id,
             'optoruid': '0',
@@ -2984,8 +3249,8 @@ def SetExcepAlarmClass():
             }
             db.updateData(TableName, up_dic, wheresql)
 
-
     return json.dumps(req.__dict__)
+
 
 '''
 
@@ -2994,10 +3259,10 @@ def SetExcepAlarmClass():
 
 '''
 
+
 @realtimealarm.route('/VariousExceptAlarmStatistics', methods=['post'])
 def VariousExceptAlarmStatistics():
-
-    # print("token", request.form.get("token"))
+    #
 
     token = request.form.get("token")
     starttime = request.form.get("starttime")
@@ -3007,28 +3272,29 @@ def VariousExceptAlarmStatistics():
 
     req = ReqResult()
     # 当没有开始时间时,直接获取失败
-    if not all([starttime,]):
+    if not all([starttime, ]):
         req.code = 1
         req.msg = "数据为空"
     else:
         # 如果截止时间没有传递,默认当前时间
-        if not all([endtime,]):
+        if not all([endtime, ]):
             nowTime = str(datetime.datetime.now())
             time_list = nowTime.split(' ')
             endtime = time_list[0]
 
-        if all([stationid,]):
+        if all([stationid, ]):
             # 执行sql
             select_sql1 = 'select m_taskalarm.id, m_taskalarm.alarmtype, IFNULL(!count(*),0) as alarmcount from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id group by m_taskalarm.id, m_taskalarm.alarmtype;'
 
             select_result1 = db.select_db(select_sql1)
-            select_sql2 = 'select m_taskalarm.id,m_taskalarm.alarmtype,count(*) as alarmcount from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id left join m_camera on m_task.camera_id = m_camera.camera_id left join m_stationroom on m_stationroom.id = m_camera.roomid where  m_stationroom.stationid = {} and m_task.create_time between "{}" and "{}" group by m_taskalarm.id, m_taskalarm.alarmtype;'.format(stationid,starttime,endtime)
+            select_sql2 = 'select m_taskalarm.id,m_taskalarm.alarmtype,count(*) as alarmcount from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id left join m_camera on m_task.camera_id = m_camera.camera_id left join m_stationroom on m_stationroom.id = m_camera.roomid where  m_stationroom.stationid = {} and m_task.create_time between "{}" and "{}" group by m_taskalarm.id, m_taskalarm.alarmtype;'.format(
+                stationid, starttime, endtime)
             select_result2 = db.select_db(select_sql2)
 
-            for res2  in select_result2:
+            for res2 in select_result2:
                 for res1 in select_result2:
                     if res2['id'] == res1['id']:
-                        select_result1[int(res2['id'])-1] = res2
+                        select_result1[int(res2['id']) - 1] = res2
 
             if len(select_result1) == 0:
                 req.code = 1
@@ -3038,13 +3304,14 @@ def VariousExceptAlarmStatistics():
         else:
             select_sql1 = 'select m_taskalarm.id, m_taskalarm.alarmtype, IFNULL(!count(*),0) as alarmcount from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id group by m_taskalarm.id, m_taskalarm.alarmtype;'
             select_result1 = db.select_db(select_sql1)
-            select_sql2 = 'select m_taskalarm.id, m_taskalarm.alarmtype,count(*) as alarmcount from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id where m_task.create_time  between "{}" and "{}" group by m_taskalarm.id, m_taskalarm.alarmtype;'.format(starttime,endtime)
+            select_sql2 = 'select m_taskalarm.id, m_taskalarm.alarmtype,count(*) as alarmcount from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id where m_task.create_time  between "{}" and "{}" group by m_taskalarm.id, m_taskalarm.alarmtype;'.format(
+                starttime, endtime)
             select_result2 = db.select_db(select_sql2)
 
-            for res2  in select_result2:
+            for res2 in select_result2:
                 for res1 in select_result2:
                     if res2['id'] == res1['id']:
-                        select_result1[int(res2['id'])-1] = res2
+                        select_result1[int(res2['id']) - 1] = res2
 
             if len(select_result1) == 0:
                 req.code = 1
@@ -3063,7 +3330,6 @@ def VariousExceptAlarmStatistics():
 
 @realtimealarm.route('/DevAbnormal', methods=['post'])
 def DevAbnormal():
-
     token = request.form.get("token")
     current_app.logger.info('DevAbnormal   token:{}'.format(token))
 
@@ -3088,9 +3354,6 @@ def DevAbnormal():
         'dev_alarm_num': dev_alarm_num,
     }
     return json.dumps(req.__dict__)
-
-
-
 
 
 '''
@@ -3224,7 +3487,6 @@ def ExportData():
     style.alignment.vert = 1
     style.font = font
 
-
     '''sheet1'''
     save_path = None
     try:
@@ -3247,7 +3509,7 @@ def ExportData():
                 j += 1
 
         '''sheet2'''
-        if len(title_list_dev)>0:
+        if len(title_list_dev) > 0:
             for i in range(len(title_list_dev)):
                 sheet2.write(0, i, title_list_dev[i], style)
                 sheet2.col(i).width = 4500  # Set the column width
@@ -3265,11 +3527,10 @@ def ExportData():
                     # print(list(results)[i])
                 j += 1
 
-
-        if len(title_list_dev)!=0 and len(title_list_camera)!=0:
-        # 保存文件
+        if len(title_list_dev) != 0 and len(title_list_camera) != 0:
+            # 保存文件
             now_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-            #save_path = '/home/python/Desktop/{}_设备异常.xls'.format(now_time)
+            # save_path = '/home/python/Desktop/{}_设备异常.xls'.format(now_time)
             save_path = '~/Desktop/DetectVideoServer/{}_设备异常.xls'.format(now_time)
             xl.save(save_path)
 
@@ -3282,9 +3543,7 @@ def ExportData():
         req.data = save_path
         # req.data = 'ok'
 
-
     return json.dumps(req.__dict__)
-
 
 
 '''
@@ -3293,6 +3552,8 @@ def ExportData():
     IndexAlarmType
 
 '''
+
+
 @realtimealarm.route('/IndexAlarmType', methods=['post'])
 def IndexAlarmType():
     print("-------------IndexAlarmType------------")
@@ -3327,7 +3588,7 @@ def IndexAlarmType():
                 ( select count(*) as cnt from m_task where errortype=4 and DATE_SUB(CURDATE(), INTERVAL 30 DAY) <= date(create_time)) ee , \
                 ( select count(*) as cnt from m_task where errortype=5 and DATE_SUB(CURDATE(), INTERVAL 30 DAY) <= date(create_time)) ff , \
                 ( select count(*) as cnt from m_task where errortype=6 and DATE_SUB(CURDATE(), INTERVAL 30 DAY) <= date(create_time)) gg "
-    print("sql:",sql)
+    print("sql:", sql)
 
     listdata = db.select_db(sql)
     print(str(listdata))
@@ -3340,9 +3601,6 @@ def IndexAlarmType():
         req.data = listdata
 
     return json.dumps(req.__dict__)
-
-
-
 
 
 def IndexAlarmType1():
@@ -3374,7 +3632,8 @@ def IndexAlarmType1():
             n_days = n_days.strftime('%Y-%m-%d')
             # print(n_days)
 
-            day_alarm_count_sql = 'select m_taskalarm.id, m_taskalarm.alarmtype,count(*) as alarmcount from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id where m_task.create_time  between "{}" and "{}" group by m_taskalarm.id, m_taskalarm.alarmtype;'.format(n_days, now_time)
+            day_alarm_count_sql = 'select m_taskalarm.id, m_taskalarm.alarmtype,count(*) as alarmcount from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id where m_task.create_time  between "{}" and "{}" group by m_taskalarm.id, m_taskalarm.alarmtype;'.format(
+                n_days, now_time)
             day_alarm_count = db.select_db(day_alarm_count_sql)
 
             day_alarm_list = []
@@ -3466,9 +3725,7 @@ def IndexAlarmType1():
         req.code = 1
         req.msg = '失败'
 
-
-    return  json.dumps(req.__dict__)
-
+    return json.dumps(req.__dict__)
 
 
 '''
@@ -3477,6 +3734,7 @@ def IndexAlarmType1():
     AlarmTrend
 
 '''
+
 
 @realtimealarm.route('/AlarmTrend', methods=['post'])
 def AlarmTrend():
@@ -3508,9 +3766,9 @@ def AlarmTrend():
 
     return json.dumps(req.__dict__)
 
+
 @realtimealarm.route('/AlarmTrend1', methods=['post'])
 def AlarmTrend1():
-
     '''
     统计月/周/日告警
     :return:  14天的告警（每天总数），12周的告警（每周的总数），12月的告警（每月的总数）
@@ -3522,29 +3780,30 @@ def AlarmTrend1():
     now_time = datetime.datetime.now().strftime('%Y-%m-%d')
     req = ReqResult()
 
-
     # 日
     if int(time_type) == 0:
         now = datetime.datetime.now()
-        delta = datetime.timedelta(days=-14+1)
+        delta = datetime.timedelta(days=-14 + 1)
         n_days = now + delta
         n_days = n_days.strftime('%Y-%m-%d')
         # n_days = '2020-11-11'
         # print(n_days)
         # 查询出告警的数量（每天的告警总数）
-        day_alarm_count_sql = 'select date(m_task.create_time) as date,count(m_task.create_time) as count from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id where m_task.create_time  between "{}" and "{}" group by date;'.format(n_days, now_time)
+        day_alarm_count_sql = 'select date(m_task.create_time) as date,count(m_task.create_time) as count from m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id where m_task.create_time  between "{}" and "{}" group by date;'.format(
+            n_days, now_time)
         day_alarm_counts = db.select_db(day_alarm_count_sql)
         # for day_alarm_count in day_alarm_counts:
         #     print(day_alarm_count)
         #     print(day_alarm_count['date'])
         #     print(day_alarm_count['count'])
 
-
         # 10天的日期
-        day_select_sql_10 = 'SELECT @date := DATE_ADD(@date, INTERVAL - 1 DAY) days FROM ( SELECT @date := DATE_ADD("{}", INTERVAL + 1 DAY) FROM m_taskalarm LIMIT 10 ) time;'.format(now_time)
+        day_select_sql_10 = 'SELECT @date := DATE_ADD(@date, INTERVAL - 1 DAY) days FROM ( SELECT @date := DATE_ADD("{}", INTERVAL + 1 DAY) FROM m_taskalarm LIMIT 10 ) time;'.format(
+            now_time)
         day_res_10 = db.select_db(day_select_sql_10)
         # 4天的日期
-        day_select_sql_4 = 'SELECT @date := DATE_ADD(@date, INTERVAL - 1 DAY) days FROM ( SELECT @date := DATE_ADD("{}", INTERVAL + 1 DAY) FROM m_taskalarm LIMIT 5 ) time;'.format(day_res_10[-1]['days'])
+        day_select_sql_4 = 'SELECT @date := DATE_ADD(@date, INTERVAL - 1 DAY) days FROM ( SELECT @date := DATE_ADD("{}", INTERVAL + 1 DAY) FROM m_taskalarm LIMIT 5 ) time;'.format(
+            day_res_10[-1]['days'])
         day_res_4 = db.select_db(day_select_sql_4)
         # 14天的日期
         day_res_14 = day_res_10 + day_res_4[1:]
@@ -3570,9 +3829,11 @@ def AlarmTrend1():
     if int(time_type) == 2:
 
         now = datetime.datetime.now()
-        month_select_sql_10 = 'SELECT DATE_FORMAT(@date := DATE_ADD(@date, INTERVAL - 1 MONTH),"%Y-%m") as month FROM ( SELECT @date := DATE_ADD("{}", INTERVAL + 1 MONTH) FROM  m_taskalarm  LIMIT 10 ) time;'.format(now)
+        month_select_sql_10 = 'SELECT DATE_FORMAT(@date := DATE_ADD(@date, INTERVAL - 1 MONTH),"%Y-%m") as month FROM ( SELECT @date := DATE_ADD("{}", INTERVAL + 1 MONTH) FROM  m_taskalarm  LIMIT 10 ) time;'.format(
+            now)
         month_res_10 = db.select_db(month_select_sql_10)
-        month_select_sql_2 = 'SELECT DATE_FORMAT(@date := DATE_ADD(@date, INTERVAL -1 MONTH),"%Y-%m") as month FROM ( SELECT @date := DATE_ADD("{}-01", INTERVAL +1 MONTH) FROM  m_taskalarm  LIMIT 3 ) time;'.format(month_res_10[-1]['month'])
+        month_select_sql_2 = 'SELECT DATE_FORMAT(@date := DATE_ADD(@date, INTERVAL -1 MONTH),"%Y-%m") as month FROM ( SELECT @date := DATE_ADD("{}-01", INTERVAL +1 MONTH) FROM  m_taskalarm  LIMIT 3 ) time;'.format(
+            month_res_10[-1]['month'])
         month_res_2 = db.select_db(month_select_sql_2)
         month_res_12 = month_res_10 + month_res_2[1:]
 
@@ -3604,11 +3865,12 @@ def AlarmTrend1():
         i = 1
         week_alarm_list = []
         while True:
-            week_select_sql = 'SELECT date_format(m_task.create_time, "%Y-%m") as week,count(*) as count FROM m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id WHERE YEARWEEK(date_format(m_task.create_time,"%Y-%m-%d")) = YEARWEEK(now())-{} Group by  week;'.format(i)
+            week_select_sql = 'SELECT date_format(m_task.create_time, "%Y-%m") as week,count(*) as count FROM m_taskalarm left join m_taskalarmtype on m_taskalarm.id = m_taskalarmtype.errorid left join m_task on m_taskalarmtype.task_id = m_task.task_id WHERE YEARWEEK(date_format(m_task.create_time,"%Y-%m-%d")) = YEARWEEK(now())-{} Group by  week;'.format(
+                i)
             week_select = db.select_db(week_select_sql)
 
             i += 1
-            if i >13:
+            if i > 13:
                 break
             count = 0
             for week in week_select:
@@ -3647,6 +3909,8 @@ def AlarmTrend1():
     DevCount
 
 '''
+
+
 @realtimealarm.route('/DevCount', methods=['post'])
 def DevCount():
     token = request.form.get("token")
@@ -3664,19 +3928,16 @@ def DevCount():
     dev_alarm = db.select_db(dev_alarm_sql)
     dev_alarm_num = dev_alarm[0]['error_num']
 
-
-
     req.code = 0
     req.msg = "成功"
     req.data = {
         'devCount': devCount[0]['devCount'],
         # 'devRuning': devCount[0]['devCount'],
         'devError': dev_alarm[0]['error_num'],
-        'devRuning': int(devCount[0]['devCount'])-int(dev_alarm[0]['error_num']),
+        'devRuning': int(devCount[0]['devCount']) - int(dev_alarm[0]['error_num']),
 
         'noInstallDev': 0,
     }
-
 
     return json.dumps(req.__dict__)
 
@@ -3684,14 +3945,9 @@ def DevCount():
 ###########################################################################
 
 
-
-
-
-
-
 # @realtimealarm.route('/GetCurAlarmList', methods=["post"])
 # def GetCurAlarmList():
-#     print("token", request.form.get("token"))
+#
 #     print("pagesize", request.form.get("pagesize"))
 #     print("pagenum", request.form.get("pagenum"))
 #
@@ -3739,16 +3995,15 @@ def DevCount():
 ########################################################################
 
 
-
 '''
 
     21.获取全部的告警类型列表
 
 '''
 
+
 @realtimealarm.route('/GetAllAlarmList', methods=["post"])
 def GetAllAlarmList():
-    print("token", request.form.get("token"))
     print("pagesize", request.form.get("pagesize"))
     print("pagenum", request.form.get("pagenum"))
 
@@ -3759,14 +4014,15 @@ def GetAllAlarmList():
 
     if pagesize == None or pagenum == None or token == None:
         req.code = 1
-        req.msg= "参数不正确"
+        req.msg = "参数不正确"
         return json.dumps(req.__dict__)
 
     current_app.logger.info('GetAllAlarmList   token:{},pagesize:{},pagenum:{}'.format(token, pagesize, pagenum))
 
     # sql = "select * ,CONCAT(station,'-',roomname) as station from v_historyalarm where opsts != 20 ORDER BY id desc limit {},{}".format( str((int(pagenum)-1)*int(pagesize)),str(pagesize))
     # sql = "select m_task.task_id as id,m_task.sts,m_task.opsts,m_taskalarmtype.updatetime,m_camera.camera_name,m_stationinfo.stationname,CONCAT(m_stationinfo.stationname,'-',m_stationroom.roomname) as station,m_taskalarm.alarmtype from m_task left join m_taskalarmtype on m_taskalarmtype.task_id=m_task.task_id left join m_taskalarm on m_taskalarm.id=m_taskalarmtype.errorid left join m_camera on m_task.camera_id=m_camera.camera_id left join m_stationroom on m_stationroom.id = m_camera.roomid left join m_stationinfo on m_stationinfo.id=m_stationroom.stationid ORDER BY m_task.task_id desc limit {},{}".format( str((int(pagenum)-1)*int(pagesize)),str(pagesize))
-    sql = "select m_task.task_id as id,m_sts.note as sts,m_task.opsts,m_stationroom.roomname as roomname,m_taskalarmtype.updatetime,m_camera.camera_name,m_stationinfo.stationname,CONCAT(m_stationinfo.stationname,'-',m_stationroom.roomname) as station,m_taskalarm.alarmtype from m_task left join m_taskalarmtype on m_taskalarmtype.task_id=m_task.task_id left join m_taskalarm on m_taskalarm.id=m_taskalarmtype.errorid left join m_camera on m_task.camera_id=m_camera.camera_id left join m_stationroom on m_stationroom.id = m_camera.roomid left join m_stationinfo on m_stationinfo.id=m_stationroom.stationid  left join m_sts on m_sts.sts=m_task.sts ORDER by id DESC limit {},{}".format( str((int(pagenum)-1)*int(pagesize)),str(pagesize))
+    sql = "select m_task.task_id as id,m_sts.note as sts,m_task.opsts,m_stationroom.roomname as roomname,m_taskalarmtype.updatetime,m_camera.camera_name,m_stationinfo.stationname,CONCAT(m_stationinfo.stationname,'-',m_stationroom.roomname) as station,m_taskalarm.alarmtype from m_task left join m_taskalarmtype on m_taskalarmtype.task_id=m_task.task_id left join m_taskalarm on m_taskalarm.id=m_taskalarmtype.errorid left join m_camera on m_task.camera_id=m_camera.camera_id left join m_stationroom on m_stationroom.id = m_camera.roomid left join m_stationinfo on m_stationinfo.id=m_stationroom.stationid  left join m_sts on m_sts.sts=m_task.sts ORDER by id DESC limit {},{}".format(
+        str((int(pagenum) - 1) * int(pagesize)), str(pagesize))
     listdata = db.select_db(sql)
 
     # print(listdata)
@@ -3774,8 +4030,8 @@ def GetAllAlarmList():
     json_list = []
     #
     for i in listdata:
-        if all([i["updatetime"],]):
-            i["updatetime"]=i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")    #
+        if all([i["updatetime"], ]):
+            i["updatetime"] = i["updatetime"].strftime("%Y-%m-%d %H:%M:%S")  #
         else:
             i["updatetime"] = None
         json_list.append(i)
@@ -3998,8 +4254,8 @@ def AddOverhaulAreaRooms():
     if select_maxid_result[0]['maxid'] is None :
         id = 1
     else:
-        # id = int(select_maxid_result[0]['maxid']) + 1
-        id=1
+        id = int(select_maxid_result[0]['maxid']) + 1
+        # id=1
     insert_dic = {
         'id': id,
         'roomids': roomids,
