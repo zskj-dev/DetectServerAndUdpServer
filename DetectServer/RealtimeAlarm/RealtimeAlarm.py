@@ -4421,7 +4421,7 @@ def _sendOptInfoToDev(optipaddr,  yiqiid, port=8081, timeout=60):
         return 6, "通信异常: " + str(e)
 
 '''
-   30 获取全部机器人列表
+   30 获取全部轨道机器人列表
 '''
 @realtimealarm.route('/GetAllRobotList', methods=["post"])
 def GetAllRobotInfo():
@@ -4432,6 +4432,35 @@ def GetAllRobotInfo():
         req.code = 1
         req.msg = "未设置机器人信息"
         return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   30.1 获取指定ID的轨道机器人信息
+   入参： id  机器人ID
+   出参： 机器人信息： id, robot_name, robot_ip, robot_port, sts, station_id, room_id, 
+                        dvr_id, channel, camer_id, create_time
+'''
+@realtimealarm.route('/GetRobotInfoByID', methods=["post"])
+def GetRobotInfoByID():
+    req = ReqResult()
+    id = request.form.get("id")
+    sqltotal = "select * from m_robot where id = {}".format(id)
+    totaldata = db.select_db(sqltotal)
+    if len(totaldata) <= 0 or totaldata is None:
+        req.code = 1
+        req.msg = "未设置机器人信息"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    json_list = []
+    for i in totaldata:
+        if i["create_time"] != None and i["create_time"] != '':
+            i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+    print("GetRobotInfoByID:", json_list)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = json_list
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 
 # 输入为字符穿，内含十六进制数，需要将其转换成十进制，并按公式转换为单位为米的距离
@@ -4460,7 +4489,7 @@ def _robot_point_position_value_convert(data):
     return data
 
 '''
-   30.1 获取取指定变电站内指定机器人的全部点位信息
+   30.2 获取取指定变电站内指定机器人的全部点位信息
 '''
 @realtimealarm.route('/Robot_point', methods=["post"])
 def GetCamera_pointsByrobotid():
