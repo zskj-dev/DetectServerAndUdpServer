@@ -161,14 +161,12 @@ class MysqlDB(object):
         try:
             id = int(id)
             table_name = str(TableName)
-            # self.conn.ping(reconnect=True)
+
             # 添加调试信息
             # print(f"DEBUG: table_name={table_name}, key={key}, id={id}")
             sql = "SELECT * FROM {} WHERE {} = {}".format(table_name, key, id)
-            print(f"DEBUG: SQL={sql}")  # 打印生成的SQL
-            self.cur.execute(sql)
-            result = self.cur.fetchone()
-            return result is not None
+            result = self.select_db(sql)
+            return len(result) > 0
         except Exception as e:
             print("check_id_exist opt error:{}".format(e))
             return False
