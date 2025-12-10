@@ -4684,9 +4684,10 @@ def _get_value_from_request(value, type_needed):
 '''
    31.1 新增一条表计的点位信息
 '''
-# 添加表计信息
-# INPUT:
+#    参数：
 #            name       表计名称
+#            camid      摄像头id，    关联表：m_camera
+#            watchpoint 摄像头点位号, 关联表：m_camera_point
 #            #type       表计类型:1:LED_红,2:LED_绿;3:旋钮开关; 4:LED_黄; 5:LED_白;6:压板开关;7:表针;其他:待添加
 #            pos_x      由用户输入的横坐标x
 #            pos_y      由用户输入的横坐标y
@@ -4695,8 +4696,10 @@ def _get_value_from_request(value, type_needed):
 @realtimealarm.route('/AddMeterPresetInfo', methods=["post"])
 def AddMeterPresetInfo():
     table_name = 'm_metername_point'
-    req = ReqResult()
-    name= request.form.get("name")
+    req         = ReqResult()
+    name        = request.form.get("name")
+    camid       = request.form.get("camid")
+    watchpoint  = request.form.get("watchpoint")
     pos_x = request.form.get("pos_x")
     pos_y = request.form.get("pos_y")
     pos_h = request.form.get("pos_h")
@@ -4707,9 +4710,14 @@ def AddMeterPresetInfo():
         req.msg= "参数缺失:meter name is needed."
         return json.dumps(req.__dict__, ensure_ascii=False) 
 
+    if camid == None or camid == '' or watchpoint == None or watchpoint == '':
+        req.code = 2
+        req.msg= "参数缺失:camid and watchpoint is needed."
+        return json.dumps(req.__dict__, ensure_ascii=False) 
+
     if pos_x == None or pos_x == '' or pos_y == None or pos_y == '' \
         or pos_h == None or pos_h == '' or pos_w == None or pos_w == '':
-        req.code = 2
+        req.code = 3
         req.msg= "参数缺失: postion info (x,y),(w,h) is needed."
         return json.dumps(req.__dict__, ensure_ascii=False) 
 
@@ -4726,6 +4734,8 @@ def AddMeterPresetInfo():
     insert_dic = {
         'id': id,
         'name':name,
+        'camid':camid,
+        'watchpoint':watchpoint,
         'type': 0,
         'pos_x':pos_x,
         'pos_y':pos_y,
@@ -4745,21 +4755,17 @@ def AddMeterPresetInfo():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
-
 '''
-   31.2 修改/更新一条表计点位信息
+   31.2  仅修改一条表计的点位信息的位置坐标信息
 '''
-# 更新表计信息
-#  INPUT    :
-#  id           列表唯一识别号ID(必选项)
-#  name         表计名称        (可选)前端写入
-#  type         表计类别        (可选)暂不使用
-#  pos_x        位置坐标x       (可选)前端写入
-#  pos_y        位置坐标y       (可选)前端写入
-#  pos_w        位置坐标w       (可选)前端写入
-#  pos_h        位置坐标h       (可选)前端写入
-@realtimealarm.route('/ModifyMeterPresetInfo', methods=["post"])
-def ModifyMeterPresetInfoByID():
+#    参数：
+#     id                   列表唯一识别号ID，从1开始
+#     pos_x                表计对应在图片中的横坐标位置
+#     pos_y                表计对应在图片中的纵坐标位置
+#     pos_w                表计对应在图片中的距离（x，y）的横向宽度
+#     pos_h                表计对应在图片中的距离（x，y）的纵向高度
+@realtimealarm.route('/ModifyMeterPresetPosInfo', methods=["post"])
+def ModifyMeterPresetPosInfo():
     table_name = 'm_metername_point'
     req = ReqResult()
 
@@ -4771,14 +4777,13 @@ def ModifyMeterPresetInfoByID():
         req.msg = "参数不正确: id must be needed and type is integer."
         return json.dumps(req.__dict__, ensure_ascii=False)
 
-    name  = request.form.get("name")
     pos_x = request.form.get("pos_x")
     pos_y = request.form.get("pos_y")
     pos_w = request.form.get("pos_w")
     pos_h = request.form.get("pos_h")
     meter_type = request.form.get("type")
 
-    current_app.logger.info("Recv modify info:id:{}, name:{}, type:{}".format(id, name, meter_type))
+    current_app.logger.info("Recv modify info:id:{}".format(id))
     current_app.logger.info("                :pos_x:{}, pos_y:{}, pos_w:{}, pos_h:{}".format(pos_x, pos_y, pos_w,pos_h))
     
 
@@ -4790,8 +4795,6 @@ def ModifyMeterPresetInfoByID():
     try:
         new_meterinfo_dic = {}  #save all data you wanted as dict.
 
-        if name != None and name != '':
-            new_meterinfo_dic['name'] = name
         if meter_type != None and meter_type != '':
             new_meterinfo_dic['type'] = meter_type
         # mark position
@@ -4818,11 +4821,69 @@ def ModifyMeterPresetInfoByID():
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+
 '''
-   31.3 删除一条表计点位信息
+   31.3 修改/更新一条表计的点位信息 (坐标信息除外)
 '''
-# 删除表计信息
+# 更新表计信息
 #  INPUT    :
+#  id           列表唯一识别号ID(必选项)
+#  name         表计名称        (可选)前端写入
+#  camid        摄像头id       (可选)
+#  watchpoint   摄像头点位号    (可选)
+#  type         表计类别        (可选)暂不使用
+@realtimealarm.route('/ModifyMeterPresetInfo', methods=["post"])
+def ModifyMeterPresetInfoByID():
+    table_name = 'm_metername_point'
+    req = ReqResult()
+
+    try:
+        # 检查输参数合法性
+        id = int(request.form.get("id"))
+    except (TypeError, ValueError):
+        req.code = 1
+        req.msg = "参数不正确: id must be needed and type is integer."
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    name  = request.form.get("name")
+    camid = request.form.get("camid")
+    watchpoint = request.form.get("watchpoint")
+
+    current_app.logger.info("Recv modify info:id:{}, name:{}, camid:{}, watchpoint:{}".format(id, name, camid, watchpoint))
+
+    if not db.checkIdExist(table_name, id):
+        req.code = 2
+        req.msg = 'ID:{} not found in table:{}'.format(id, table_name)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    
+    try:
+        new_meterinfo_dic = {}  #save all data you wanted as dict.
+
+        if name != None and name != '':
+            new_meterinfo_dic['name'] = name
+        if camid != None and camid != '':
+            new_meterinfo_dic['camid'] = camid
+        if watchpoint != None and watchpoint != '':
+            new_meterinfo_dic['watchpoint'] = watchpoint
+
+        wheresql = 'id={};'.format(id)
+        updateresult = db.updateData(table_name, new_meterinfo_dic, wheresql)
+
+        # sqltatol += "where id = {}".format(id)
+        # db.execute_db(sqltatol)
+        req.code = 0
+        req.msg = "success"
+
+    except Exception as e:
+        req.code = 3
+        req.msg = "Modify failed:" + e
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+'''
+   31.4 删除一条表计点位信息
+'''
+# 参数：
 #  id           列表唯一识别号ID
 @realtimealarm.route('/DeleteMeterPresetInfo', methods=["post"])
 def DeleteMeterPresetInfoByID():
@@ -4857,8 +4918,10 @@ def DeleteMeterPresetInfoByID():
 
 
 '''
-   31.4 根据ID查询对应表计的点位信息
+   31.5 根据ID查询对应表计的点位信息
 '''
+# 参数：
+#  id           列表唯一识别号ID，从1开始
 @realtimealarm.route('/GetMeterPresetInfoByID', methods=["post"])
 def GetMeterPresetInfoByID():
     table_name = 'm_metername_point'
@@ -4877,7 +4940,7 @@ def GetMeterPresetInfoByID():
         req.code = 2
         req.msg = 'ID:{} not found in table:{}'.format(id, table_name)
         return json.dumps(req.__dict__, ensure_ascii=False) 
-        
+
     json_list = []
     for i in totaldata:
         i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
@@ -4891,10 +4954,53 @@ def GetMeterPresetInfoByID():
 
 
 '''
-   31.5 查询所有表计的点位信息
+   31.6  根据摄像头名称和摄像头点位，查询对应表计的点位信息集合
+'''
+# 参数：
+# camid                摄像头ID         ，关联表 m_camera
+# watchpoint     摄像头点位ID ，关联表 m_camera_point
+@realtimealarm.route('/GetMeterPresetInfoListByCamInfo', methods=["post"])
+def GetMeterPresetInfoListByCamInfo():
+    table_name = 'm_metername_point'
+    req = ReqResult()
+    camid = request.form.get("camid")
+    watchpoint = request.form.get("watchpoint")
+
+    # 检查输入参数合法性
+    if camid == None or camid == '':
+        req.code = 1
+        req.msg= "参数不正确"
+        return json.dumps(req.__dict__)
+
+    if watchpoint == None or watchpoint == '':
+        req.code = 1
+        req.msg= "参数不正确"
+        return json.dumps(req.__dict__)
+
+    sql = "select * from {} where camid = '{}' and watchpoint = '{}'".format(table_name, camid, watchpoint)
+    totaldata = db.select_db(sql)
+    if len(totaldata) <= 0:
+        req.code = 2
+        req.msg = 'camid:{} and watchpoint:{} not found in table:{}'.format(camid, watchpoint, table_name)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    json_list = []
+    for i in totaldata:
+        i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
+   31.7 查询所有表计的点位信息
 '''
 @realtimealarm.route('/GetAllMeterPresetInfoList', methods=["post"])
-def GetAllMeterPresetInfo():
+def GetAllMeterPresetInfoList():
     table_name = 'm_metername_point'
     req = ReqResult()
 
@@ -4918,9 +5024,14 @@ def GetAllMeterPresetInfo():
 
 
 '''
-   31.6  增加一条与任务ID和子任务ID相关连的表计信息(创建一个类型为表计的子任务时)
-'''
-@realtimealarm.route('/AddMeterInfo', methods=["post"])
+   31.8  增加一条与任务ID和子任务ID相关连的表计信息(创建一个类型为表计的子任务时)
+ '''
+# 参数：
+# planid              任务ID
+# planinfoid          子任务ID
+# metername_id        表计名称对应的ID，关联表：m_metername_point
+# enable              标志是否启用该表计的识别：0：不启用，1：启用（默认为：0）
+@realtimealarm.route('/AddMeterInfoByPlanInfoID', methods=["post"])
 def AddMeternameByPlanInfoID():
     table_name      = 'm_visitationplaninfo_meter'
     req             = ReqResult()
@@ -4929,33 +5040,16 @@ def AddMeternameByPlanInfoID():
         # 新增接口至少应该包含任务ID/子任务ID和表计名称ID/点位ID/摄像头ID/变电站ID/机房ID
         planid          = int(request.form.get("planid"))
         planinfoid      = int(request.form.get("planinfoid"))
-        station_id      = int(request.form.get("station_id"))
-        stationroom_id  = int(request.form.get("stationroom_id"))
-        camera_id       = int(request.form.get("camera_id"))
         metername_id    = int(request.form.get("metername_id"))
+        enable          = int(request.form.get("enable"))
     except Exception as e:
         req.code = 1
-        req.msg= "缺少参数: planid / planinfoid /  station_id / stationroom_id / camera_id / metername_id is needed."
+        req.msg= "缺少参数: planid / planinfoid /  metername_id /enable flag is needed."
         return json.dumps(req.__dict__, ensure_ascii=False)
 
-    current_app.logger.info("recv:plan_id:{}, plan_info_id:{}, meternameid:{}".format(planid, planinfoid, metername_id))
+    current_app.logger.info("recv:plan_id:{}, plan_info_id:{}, meternameid:{}, enable:{}".format(planid, planinfoid, metername_id, enable))
 
     # 确认各ID在对应表中存在
-    if not db.checkIdExist('m_stationinfo', station_id):
-        req.code = 2
-        req.msg = 'station_id:{} not found in table:{}'.format(station_id, 'm_stationinfo')
-        return json.dumps(req.__dict__, ensure_ascii=False)
-    
-    if not db.checkIdExist('m_stationroom', stationroom_id):
-        req.code = 2
-        req.msg = 'stationroom_id:{} not found in table:{}'.format(stationroom_id, 'm_stationroom')
-        return json.dumps(req.__dict__, ensure_ascii=False)
-
-    if not db.checkIdExist('m_camera', camera_id, "camera_id"):
-        req.code = 2
-        req.msg = 'camera_id:{} not found in table:{}'.format(camera_id, 'm_camera')
-        return json.dumps(req.__dict__, ensure_ascii=False)
-
     if not db.checkIdExist('m_metername_point', metername_id):
         req.code = 2
         req.msg = 'metername_id:{} not found in table:{}'.format(metername_id, 'm_metername_point')
@@ -4973,10 +5067,8 @@ def AddMeternameByPlanInfoID():
         'id': id,
         'planid': planid,
         'planinfoid': planinfoid,
-        'station_id':station_id,
-        'stationroom_id':stationroom_id,
-        'camera_id':camera_id,
         'metername_id':metername_id,
+        'enable': enable,
         'value_int': 0,
         'value_str': '',
         'imgname':'',
@@ -4995,8 +5087,10 @@ def AddMeternameByPlanInfoID():
 
 
 '''
-31.7  删除一条与任务ID和子任务ID相关连的表计信息  (任务类型为表计的子任务)
+31.9  删除一条与子任务ID相关连的表计信息  （ 任务类型为表计的子任务）
 '''
+# 参数：
+# id                       列表唯一识别号ID，从1开始
 @realtimealarm.route('/DeleteMeterInfoByID', methods=["post"])
 def DeleteMeterInfoByID():
     table_name = 'm_visitationplaninfo_meter'
@@ -5011,7 +5105,7 @@ def DeleteMeterInfoByID():
     
     if not db.checkIdExist(table_name, id):
         req.code = 2
-        req.msg = 'metername_id:{} not found in table:{}'.format(id, 'm_metername_point')
+        req.msg = 'metername_id:{} not found in table:{}'.format(id, table_name)
         return json.dumps(req.__dict__, ensure_ascii=False)
 
     try:
@@ -5030,25 +5124,22 @@ def DeleteMeterInfoByID():
 
 
 '''
-   31.8  修改一条与任务ID和子任务ID相关连的表计信息
+   31.10  修改/更新一条与任务ID和子任务ID相关连的表计信息
 '''
+# 参数：
+# id                  列表唯一识别号ID，从1开始
+# metername_id        表计名称对应的ID，关联表：m_metername_point
+# enable              标志是否启用该表计的识别：0：不启用，1：启用（默认为：0）
 @realtimealarm.route('/ModifyMeterInfo', methods=["post"])
 def ModifyMeterInfoByID():
     table_name      = 'm_visitationplaninfo_meter'
 
     req             = ReqResult()
     id              = request.form.get("id")
-    station_id      = request.form.get("station_id")
-    stationroom_id  = request.form.get("stationroom_id")
-    camera_id       = request.form.get("camera_id")
     metername_id    = request.form.get("metername_id")
+    enable          = request.form.get("enable")
 
-    value_int   = request.form.get("value_int")
-    value_str   = request.form.get("value_str")
-    meter_type  = request.form.get("type")
-    imgname     = request.form.get("imgname")
-
-    current_app.logger.info("Recv modify info:id:{}, metername_id:{}, type:{}, value_int:{},value_str:{}".format(id, metername_id, meter_type,value_int,value_str))
+    current_app.logger.info("Recv modify info:id:{}, metername_id:{}, enable:{}".format(id, metername_id, enable))
     
     # 检查输参数合法性
     if id == None or id == '':
@@ -5064,22 +5155,10 @@ def ModifyMeterInfoByID():
     try:
         new_meterinfo_dic = {}  #save all data you wanted as dict.
 
-        if station_id != None and station_id != '':
-            new_meterinfo_dic['station_id'] = station_id
-        if stationroom_id != None and stationroom_id != '':
-            new_meterinfo_dic['stationroom_id'] = stationroom_id
-        if camera_id != None and camera_id != '':
-            new_meterinfo_dic['camera_id'] = camera_id
         if metername_id != None and metername_id != '':
             new_meterinfo_dic['metername_id'] = metername_id
-
-        if value_int != None and value_int != '':
-            new_meterinfo_dic['value_int'] = value_int
-        if value_str != None and value_str != '':
-            new_meterinfo_dic['value_str'] = value_str
-
-        if imgname != None and imgname != '':
-            new_meterinfo_dic['imgname'] = imgname
+        if enable != None and enable != '':
+            new_meterinfo_dic['enable'] = enable
 
         wheresql = 'id={};'.format(id)
         db.updateData(table_name, new_meterinfo_dic, wheresql)
@@ -5095,8 +5174,10 @@ def ModifyMeterInfoByID():
 
 
 '''
-   31.9  根据ID号,获取一条与任务ID和子任务ID关联的表计信息
+   31.11  根据ID号,获取一条与任务ID和子任务ID关联的表计信息
 '''
+#     参数：
+#     id           列表唯一识别号ID，从1开始
 @realtimealarm.route('/GetMeterInfoByID', methods=["post"])
 def GetMeterInfoByID():
     table_name = 'm_visitationplaninfo_meter'
@@ -5129,11 +5210,11 @@ def GetMeterInfoByID():
 
 
 '''
-   31.10 根据计划子任务ID,获取该子任务下的所有表计信息
+   31.12 根据计划子任务ID,获取该子任务下的所有表计信息
     #  INPUT:
     #  planinfoid:子任务ID号
 '''
-@realtimealarm.route('/GetMeterInfoListByPlanInfoID', methods=["post"])
+@realtimealarm.route('/GetMeterInfoByPlanInfoID', methods=["post"])
 def GetMeterInfoByPlanInfoID():
     table_name = 'm_visitationplaninfo_meter'
     req = ReqResult()
@@ -5165,7 +5246,7 @@ def GetMeterInfoByPlanInfoID():
 
 
 '''
-   31.11 获取识别后的所有表记值列表集合
+   31.13 获取识别后的所有表记值列表集合
     #  INPUT:无
 '''
 @realtimealarm.route('/GetAllMeterInfoList', methods=["post"])
