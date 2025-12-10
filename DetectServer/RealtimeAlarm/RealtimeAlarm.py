@@ -1,3 +1,5 @@
+import re
+
 from flask import Blueprint, render_template, redirect, request, current_app, send_file
 from flask import Flask, render_template, request, jsonify, make_response
 from common.mysqloptor import db
@@ -1239,6 +1241,13 @@ def GetStationDVRByCamID():
 '''
 12.DVR/NVR 摄像头信息列表
 '''
+
+"""
+用正则过滤目标字符串（支持模糊匹配）
+匹配规则：
+- 匹配 "北京怀柔-110kV雁栖湖变电站-"（含可能的空格）
+- 匹配 "北京电力怀柔公司 雁栖湖站"（含可能的空格/符号）
+"""
 @realtimealarm.route('/GetStationDVRCamList', methods=["post"])
 def GetStationDVRCamList():
     req = ReqResult()
@@ -1251,10 +1260,11 @@ def GetStationDVRCamList():
     sqltotal = "select * from m_camera  where dvr_id={}".format(dvr_id)
     totaldata = db.select_db(sqltotal)
     json_list = []
+    pattern = r"北京怀柔-110kV雁栖湖变电站-|北京电力怀柔公司\s*雁栖湖站"
     for i in totaldata:
         i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
         json_list.append(i)
-
+        i["camera_name"]=re.sub(pattern,"",i["camera_name"]).strip()
     print("GetStationDVRList:", json_list)
     req.code = 0
     req.msg = "读取成功"
@@ -4097,6 +4107,8 @@ def AddCamera_point():
     point_info = request.form.get("point_info")
     point_type = request.form.get("point_type")
     camera_type = request.form.get("camera_type")
+    preset_id=request.form.get("preset_id")
+    robot_point_id=request.form.get("robot_point_id")
 
 
     req = ReqResult()
@@ -4106,8 +4118,8 @@ def AddCamera_point():
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('AddCamera_point   camera_id:{},point_info:{},point_type:{},'
-                            'camera_type:{}'
-                            .format(0, camera_id, point_info, point_type, camera_type))
+                            'camera_type:{},' 'preset_id:{}' 'robot_point_id:{}'
+                            .format(0, camera_id, point_info, point_type, camera_type,preset_id,robot_point_id))
 
     select_maxid_sql = 'select max(point_id) as maxid from m_camera_point'
     select_maxid_result = db.select_db(select_maxid_sql)
@@ -4124,7 +4136,9 @@ def AddCamera_point():
         'point_info': point_info,
         'point_type': point_type,
         'camera_type': camera_type,
-        'create_time': nowTime
+        'create_time': nowTime,
+        'preset_id':preset_id,
+        'robot_point_id':robot_point_id
     }
     print("----111111111-----", insert_dic)
     db.insertData("m_camera_point", insert_dic)
@@ -4144,6 +4158,8 @@ def ModifyCamera_point():
     point_info = request.form.get("point_info")
     point_type = request.form.get("point_type")
     camera_type = request.form.get("camera_type")
+    preset_id=request.form.get("preset_id")
+    robot_point_id=request.form.get("robot_point_id")
 
     req = ReqResult()
     if point_id == None or point_info == None or point_type == None \
@@ -4155,8 +4171,8 @@ def ModifyCamera_point():
                             'camera_type:{}'
                             .format(point_id, point_info, point_type, camera_type))
 
-    sql = "update m_camera_point set point_info='{}',point_type='{}',camera_type='{}' where point_id={}".format(
-        point_info, point_type, camera_type, point_id)
+    sql = "update m_camera_point set point_info='{}',point_type='{}',camera_type='{}',preset_id='{}',robot_point_id='{}' where point_id={}".format(
+        point_info, point_type, camera_type, point_id,preset_id,robot_point_id)
     print("----ModifyStationRoomInfo sql:", sql)
     db.execute_db(sql)
     print("----ModifyStationRoomInfo sql over!")
