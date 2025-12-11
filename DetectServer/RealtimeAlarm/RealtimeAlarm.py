@@ -4531,6 +4531,37 @@ def GetCamera_pointsByrobotid():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 '''
+   30.3 根据站名/NVR/摄像头名称获取机器人信息
+'''
+@realtimealarm.route('/GetRobotInfoByCamID', methods=["post"])
+def GetRobotInfoByCamID():
+    table_name = 'm_robot'
+    req = ReqResult()
+    cam_id = request.form.get("cam_id")
+    print("robot_id:", cam_id)
+  
+    current_app.logger.info('GetAllRobotpointID:{}')
+    sqltotal = "select * from {} where robot_id = {}".format(table_name, cam_id)
+    totaldata = db.select_db(sqltotal)
+    if len(totaldata) <= 0 or totaldata is None:
+        req.code = 1
+        req.msg = "未设置机器人信息"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    json_list = []
+    for i in totaldata:
+        if i["create_time"] != None and i["create_time"] != '':
+            i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    print("GetRobotInfoByCamID:", json_list)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = json_list
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+'''
    30.2 发送机器人移动指令
 '''
 def _command_input_parese_print(opt_cmd, opt_pos):
@@ -4696,6 +4727,9 @@ def _get_value_from_request(value, type_needed):
             return value
     else:
         return value
+
+
+
 
 '''
    31.1 新增一条表计的点位信息
