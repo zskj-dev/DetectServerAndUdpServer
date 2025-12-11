@@ -4172,7 +4172,7 @@ def ModifyCamera_point():
                             .format(point_id, point_info, point_type, camera_type))
 
     sql = "update m_camera_point set point_info='{}',point_type='{}',camera_type='{}',preset_id='{}',robot_point_id='{}' where point_id={}".format(
-        point_info, point_type, camera_type, point_id,preset_id,robot_point_id)
+        point_info, point_type, camera_type, preset_id, robot_point_id, point_id)
     print("----ModifyStationRoomInfo sql:", sql)
     db.execute_db(sql)
     print("----ModifyStationRoomInfo sql over!")
@@ -4538,10 +4538,10 @@ def GetRobotInfoByCamID():
     table_name = 'm_robot'
     req = ReqResult()
     cam_id = request.form.get("cam_id")
-    print("robot_id:", cam_id)
+    print("cam_id:", cam_id)
   
     current_app.logger.info('GetAllRobotpointID:{}')
-    sqltotal = "select * from {} where robot_id = {}".format(table_name, cam_id)
+    sqltotal = "select * from {} where camera_id = {}".format(table_name, cam_id)
     totaldata = db.select_db(sqltotal)
     if len(totaldata) <= 0 or totaldata is None:
         req.code = 1
