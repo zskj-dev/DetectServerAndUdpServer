@@ -4170,6 +4170,8 @@ def ModifyCamera_point():
     current_app.logger.info('ModifyCamera_point   point_id:{},point_info:{},point_type:{},'
                             'camera_type:{}'
                             .format(point_id, point_info, point_type, camera_type))
+    if robot_point_id is None or robot_point_id == '' or robot_point_id == 'null':
+        robot_point_id = 0
 
     sql = "update m_camera_point set point_info='{}',point_type='{}',camera_type='{}',preset_id='{}',robot_point_id='{}' where point_id={}".format(
         point_info, point_type, camera_type, preset_id, robot_point_id, point_id)
