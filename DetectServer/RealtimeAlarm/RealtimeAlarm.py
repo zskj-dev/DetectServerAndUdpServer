@@ -4136,12 +4136,12 @@ def AddCamera_point():
     nowTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     insert_dic = {
        'point_id':point_id,
+        'preset_id':preset_id,
         'camera_id': camera_id,
         'point_info': point_info,
         'point_type': point_type,
         'camera_type': camera_type,
         'create_time': nowTime,
-        'preset_id':preset_id,
         'robot_point_id': _SetRobotPointIDZeroIfNull(robot_point_id)
     }
     print("----111111111-----", insert_dic)
