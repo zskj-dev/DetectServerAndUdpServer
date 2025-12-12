@@ -4096,7 +4096,11 @@ def GetCamera_pointsBycameraid():
     req.data = totaldata
     return json.dumps(req.__dict__, ensure_ascii=False)
 
-
+# 设置robot_point_id为空时，赋值为0；配合前端使用
+def _SetRobotPointIDZeroIfNull(robot_point_id):
+    if robot_point_id is None or robot_point_id == '' or robot_point_id == 'null':
+        return 0
+    return robot_point_id
 
 '''
    27.1 添加指定变电站内指定摄像头的点位
@@ -4138,7 +4142,7 @@ def AddCamera_point():
         'camera_type': camera_type,
         'create_time': nowTime,
         'preset_id':preset_id,
-        'robot_point_id':robot_point_id
+        'robot_point_id': _SetRobotPointIDZeroIfNull(robot_point_id)
     }
     print("----111111111-----", insert_dic)
     db.insertData("m_camera_point", insert_dic)
@@ -4170,6 +4174,8 @@ def ModifyCamera_point():
     current_app.logger.info('ModifyCamera_point   point_id:{},point_info:{},point_type:{},'
                             'camera_type:{}'
                             .format(point_id, point_info, point_type, camera_type))
+
+    robot_point_id = _SetRobotPointIDZeroIfNull(robot_point_id)
 
     sql = "update m_camera_point set point_info='{}',point_type='{}',camera_type='{}',preset_id='{}',robot_point_id='{}' where point_id={}".format(
         point_info, point_type, camera_type, preset_id, robot_point_id, point_id)
