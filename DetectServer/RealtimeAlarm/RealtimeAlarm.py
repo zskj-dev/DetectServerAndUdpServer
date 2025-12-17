@@ -4523,6 +4523,11 @@ def GetCamera_pointsByrobotid():
     current_app.logger.info('GetAllRobotpointID:{}')
     sqltotal = "select id, point_type, pos_x, pos_y, create_time from {} where robot_id = {}".format(table_name, robot_id)
     totaldata = db.select_db(sqltotal)
+    if len(totaldata) <= 0 or totaldata is None:
+        req.code = 1
+        req.msg = "未设置机器人ID为:{}的点位信息".format(robot_id)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
     json_list = []
     for i in totaldata:
         if i["create_time"] != None and i["create_time"] != '':
