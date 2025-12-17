@@ -78,24 +78,25 @@ def is_file_readable_with_content(file_path):
     检查文件是否存在、可读以及不为空。
 
     :param file_path: 文件的路径
-    :return: 如果文件存在、可读且不为空，则返回True；否则返回False
+    :return: 如果文件存在、可读且不为空，则返回0；
+             否则返回对应错误码:4:文件不存在, 5:文件不可读, 6:文件为空
     """
     # 检查文件是否存在
     if not os.path.exists(file_path):
-        return False
+        return 4
 
         # 检查文件是否有读取权限
     if not os.access(file_path, os.R_OK):
-        return False
+        return 5
 
         # 检查文件是否为空
     # 使用os.stat()获取文件大小，如果大小为0，则认为是空文件
     file_size = os.stat(file_path).st_size
     if file_size == 0:
-        return False
+        return 6
     print("file_size:",file_size)
         # 如果通过了所有检查，则文件是可读的且不为空
-    return True
+    return 0
 
 
 # 更新对应巡视任务的上一次执行时间和当前任务的任务唯一码
@@ -329,7 +330,7 @@ def PlanSubItemAction(iitem, mgcode):
             NVRInfo["channel"],  # 通道号
             watchpoint,  # 预置点编号
             imgfilenameonly,  # 输出文件名
-            5  # 等待时间（秒）
+            15  # 等待时间（秒）
         )
         if success == False:
             status_data["DownLoadImage"] = "Download Image Failed"
@@ -410,7 +411,7 @@ def PlanSubItemAction(iitem, mgcode):
             NVRInfo["channel"],  # 通道号
             watchpoint,  # 预置点编号
             imgfilenameonly,  # 输出文件名
-            5  # 等待时间（秒）
+            15  # 等待时间（秒）
         )
         if success == False:
             status_data["DownLoadImage"] = "Download Image Failed"
@@ -879,7 +880,7 @@ def udp_server(mqDetectTask,host='0.0.0.0', port=8009):
                 'errfrom': 1, # 告警来源: 1:检测终端; 2:系统任务
                 'revint': 0,
                 'revstr': "0",
-                'state': 0,
+                'state': 0,   # 0:检测中；1：检测正常；2：检测提示；3：检测告警；4下载图片失败
                 'flag': 0,
                 'gifname':pd[6],
                 'optflag1':0,
@@ -1136,7 +1137,8 @@ def DetectImage(imgfilenameonly,systemsetting):
     print("DetectImage:", imgfilenameonly,systemsetting)
     type_counts = {str(k): 0 for k in systemsetting["info"].keys()}# 初始化类型计数器
     model = YOLO(systemsetting["filename"])
-    if is_file_readable_with_content(imgfilenameonly):
+    img_stat = is_file_readable_with_content(imgfilenameonly)
+    if 0 == img_stat:
         with Image.open(imgfilenameonly) as img:
             rgb_img = img.convert("RGB")
             result=model.predict(source=imgfilenameonly)
@@ -1174,7 +1176,11 @@ def DetectImage(imgfilenameonly,systemsetting):
             detectImage_result["errortype"]=most_common_type
             # print(detectImage_result)
             return detectImage_result
-
+    else:
+        print(f"Image file {imgfilenameonly} is not readable or has no content.")
+        detectImage_result["state"] = img_stat  # 文件不可读状态
+        detectImage_result["errortype"] = "File Not Readable"
+        return detectImage_result
 
 """ 2025年8月12日 检查并删除检修区域过期数据"""
 def _check_and_delete():
