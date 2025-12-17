@@ -125,7 +125,8 @@ def getTableNextID(TableName):
     return id
 
 #巡视任务子项 执行函数
-def sendOptInfoToDev(optipaddr, yiqiid,port=8082, timeout=30):
+# 机器人移动的最大时间一分半左右
+def sendOptInfoToDev(optipaddr, yiqiid,port=8082, timeout=180):
     """
     通过TCP发送命令并根据响应或超时判断结果
 
@@ -657,26 +658,7 @@ def getOverhaulArearoom_Cameras(Camera_id):
     OverhaulArea_starttime = ''
     OverhaulArea_endtime = ''
     Overhaulproomresults=None
-    # if select_maxid_result[0]['maxid']==id:
-    #     Overhaulsql = "select * from m_overhaularea where  id= {}".format(id)
-    #     totaldata = db.select_db(Overhaulsql)
-    #     print("OverhaulAreaCameras:", totaldata)
-    #     for iitem in totaldata:
-    #         OverhaulArea_endtime=iitem['endtime']
-    #         OverhaulArea_starttime=iitem['starttime']
-    #         OverhaulAreaRooms=iitem['roomids'].split(",")
-    #         print(OverhaulAreaRooms)
-    #         int_room_list = [int(num) for num in OverhaulAreaRooms]
-    #         roomids_str= ', '.join(map(str, int_room_list))
-    #         selectroomcamerasql="select camera_id from m_camera where  roomid in ({})".format(roomids_str)
-    #         totaldata1 = db.select_db(selectroomcamerasql)
-    #         print(totaldata1)
-    #         for cameraid in totaldata1:
-    #             OverhaulAreaCameras.append(cameraid['camera_id'])
-    #         print("OverhaulAreaCameras",OverhaulAreaCameras)
-    #     return OverhaulAreaCameras,OverhaulArea_starttime,OverhaulArea_endtime
-    # else:
-    #     return OverhaulAreaCameras, OverhaulArea_starttime, OverhaulArea_endtime
+
     print("判断该摄像头是否在检修区", Camera_id)
     select_roomid_bycamera_id = 'select roomid from m_camera where camera_id={}'.format(Camera_id)
     select_roomid_result = db.select_db(select_roomid_bycamera_id)
@@ -685,22 +667,23 @@ def getOverhaulArearoom_Cameras(Camera_id):
         OverhaulAreaCameras_bool = False
         OverhaulArea_starttime = ''
         OverhaulArea_endtime = ''
-
     else:
-        roomid = select_roomid_result[0]["roomid"]
-        Overhaulproomsql = "select * from v_overhaularea where  room_id= {}".format(roomid)
-        Overhaulproomresults = db.select_db(Overhaulproomsql)
-        if Overhaulproomresults is None or Overhaulproomresults == '':
-            OverhaulAreaCameras_bool = False
-            OverhaulArea_starttime = ''
-            OverhaulArea_endtime = ''
-        else:
-            OverhaulAreaCameras_bool = True
-            print("Overhaulproomresults:", Overhaulproomresults)
-            for items in Overhaulproomresults:
-                OverhaulArea_endtime = items['merged_end']
-                OverhaulArea_starttime = items['merged_start']
-
+        try:
+            roomid = select_roomid_result[0]["roomid"]
+            Overhaulproomsql = "select * from m_overhaularea where  room_id= {}".format(roomid)
+            Overhaulproomresults = db.select_db(Overhaulproomsql)
+            if Overhaulproomresults is None or Overhaulproomresults == '':
+                OverhaulAreaCameras_bool = False
+                OverhaulArea_starttime = ''
+                OverhaulArea_endtime = ''
+            else:
+                OverhaulAreaCameras_bool = True
+                print("Overhaulproomresults:", Overhaulproomresults)
+                for items in Overhaulproomresults:
+                    OverhaulArea_endtime = items['merged_end']
+                    OverhaulArea_starttime = items['merged_start']
+        except Exception as e:
+            print("get info from m_overhaularea faile:", e)
     return OverhaulAreaCameras_bool, OverhaulArea_starttime, OverhaulArea_endtime
 
 
