@@ -15,6 +15,7 @@ import cv2
 from datetime import datetime, timedelta
 from PIL import Image,ImageDraw
 import uuid
+from common.imageCropped import * # 表计任务图片分割处理
 
 qDetectTask = Queue()
 
@@ -226,31 +227,6 @@ def UpdateSubPlanCheckResultByHisid(hisid, errinfo, errid, errtype, detectresult
     '''.format(errinfo,errid, errtype, detectresult, hisid )
     db.execute_db(sqlstr)
 
-# 更新表计内容中的图片名称
-# input：
-#       planinfoid：   巡视任务子项ID
-#       meterimgname：  表计图片名称
-def _UpdateSubPlanMeterInfoImageNameByPlanInfoID(planinfoid, meterimgname):
-    table_name = "m_visitationplaninfo_meter"
-    # 如果输入的图像名字带路径，则去掉路径
-    if os.path.isabs(meterimgname):
-        meterimgname = os.path.basename(meterimgname)
-    try:
-        planinfoid = int(planinfoid)
-        sqlstr = '''
-        UPDATE {}
-            SET 
-            imgname = '{}'
-            WHERE 
-            planinfoid = {}
-        '''.format(table_name, meterimgname, planinfoid)
-        db.execute_db(sqlstr)
-        print("Success:_UpdateSubPlanMeterInfoImageNameByPlanInfoID sql:", sqlstr)
-        return 0
-    except Exception as e:
-        print("Failed:update {} image:{}".format(table_name, e))
-        return 1
-
 
 def PlanSubItemAction(iitem, mgcode):
     if iitem["id"] is None:
@@ -369,25 +345,32 @@ def PlanSubItemAction(iitem, mgcode):
             print("参数:", hisid, errstr, errid, errtype, resultstr)
 
             # 将图片名称更新到表计信息表中
-            _UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+            UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
 
-            try:
-                systemsetting = getModelFileNameAndCurErrLevel()
-                systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
-                                                                 systemsetting["curerrlevel"])
-                # 检测图片并返回检测类型、检测state
-                print(imgfilenameonly, systemsetting)
-                detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
-            except Exception as e:
-                print(e)
-            stat1 = detectImage_sigleresult.get("state")
-            # print("stat1:", stat1)
-            errortype1 = detectImage_sigleresult.get("errortype")
-            # print("errortype1:", errortype1)
-            errorimg1 = os.path.basename(imgfilenameonly)
-            # print("errorimg1:", errorimg1)
-            print("NVRInfo", NVRInfo)
-            InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+            croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
+            if croppedCnt <= 0:
+                print("[Warnning]No Cropped images detect needed, stop detected.")
+                return 
+            else:
+                try:
+                    systemsetting = getModelFileNameAndCurErrLevel()
+                    systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
+                                                                    systemsetting["curerrlevel"])
+                    # 检测图片并返回检测类型、检测state
+                    print(imgfilenameonly, systemsetting)
+                    print("NVRInfo", NVRInfo)
+                    for filePath in filesInfo["filepath"]:
+                        detectImage_sigleresult = DetectImage(filePath, systemsetting)
+
+                        stat1 = detectImage_sigleresult.get("state")
+                        # print("stat1:", stat1)
+                        errortype1 = detectImage_sigleresult.get("errortype")
+                        # print("errortype1:", errortype1)
+                        errorimg1 = os.path.basename(imgfilenameonly)
+                        # print("errorimg1:", errorimg1)
+                        InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+                except Exception as e:
+                    print(e)
 
     else:
         # 3、其他情况（没有检修区域，没有可控制状态   直接检测or表计任务）
@@ -430,7 +413,7 @@ def PlanSubItemAction(iitem, mgcode):
                 systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
                                                                  systemsetting["curerrlevel"])
                 # 检测图片并返回检测类型、检测state
-                print(imgfilenameonly, systemsetting)
+                print(f"get image name:{imgfilenameonly}, systemsetting:{systemsetting}")
                 detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
             except Exception as e:
                 print(e)
@@ -448,27 +431,31 @@ def PlanSubItemAction(iitem, mgcode):
             print("该摄像头不可可控的是表计任务")
             print("参数:", hisid, errstr, errid, errtype, resultstr)
 
-            # 将图片名称更新到表计信息表中
-            _UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+            UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+            croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
+            if croppedCnt <= 0:
+                print("[Warnning]No Cropped images detect needed, stop detected.")
+                return 
+            else:
+                try:
+                    systemsetting = getModelFileNameAndCurErrLevel()
+                    systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
+                                                                    systemsetting["curerrlevel"])
+                    # 检测图片并返回检测类型、检测state
+                    print(imgfilenameonly, systemsetting)
+                    print("NVRInfo", NVRInfo)
+                    for filePath in filesInfo["filepath"]:
+                        detectImage_sigleresult = DetectImage(filePath, systemsetting)
 
-            try:
-                systemsetting = getModelFileNameAndCurErrLevel()
-                systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
-                                                                 systemsetting["curerrlevel"])
-                # 检测图片并返回检测类型、检测state
-                print(imgfilenameonly, systemsetting)
-                detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
-            except Exception as e:
-                print(e)
-            stat1 = detectImage_sigleresult.get("state")
-            # print("stat1:", stat1)
-            errortype1 = detectImage_sigleresult.get("errortype")
-            # print("errortype1:", errortype1)
-            errorimg1 = os.path.basename(imgfilenameonly)
-            # print("errorimg1:", errorimg1)
-            print("NVRInfo", NVRInfo)
-            InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
-
+                        stat1 = detectImage_sigleresult.get("state")
+                        # print("stat1:", stat1)
+                        errortype1 = detectImage_sigleresult.get("errortype")
+                        # print("errortype1:", errortype1)
+                        errorimg1 = os.path.basename(imgfilenameonly)
+                        # print("errorimg1:", errorimg1)
+                        InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+                except Exception as e:
+                    print(e)
 
     # #需要控制
     # if int(iitem["ctlopt"]) == 1:
