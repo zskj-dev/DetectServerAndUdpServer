@@ -41,10 +41,14 @@ color_mapping = {
     "resolved_alert": (188, 143, 143),  # 淡玫瑰红色，用于已解决的告警（可选）
 }
 
-def getModelFileNameAndCurErrLevel():
+# 向下兼容处理：默认按flag为关键字查找；当输入isMeter时查看是否有表计模型
+def getModelFileNameAndCurErrLevel(flag_name="flag"):
     systemsetting = {}
-    sqltotal = "select a.filename,a.id from m_model a where a.flag = 1"
+    sqltotal = "select a.filename,a.id from m_model a where a.{} = 1".format(flag_name)
     totaldata = db.select_db(sqltotal)
+    if len(totaldata) <= 0:
+        print(f"[ERROR]No element found in m_model, flag_name:{flag_name}")
+        return
     #print("getSystemConfig:", totaldata[0]["filename"])
     systemsetting["filename"] = totaldata[0].get("filename")  # 避免 KeyError
     systemsetting["fileid"] = totaldata[0].get("id")
@@ -353,7 +357,7 @@ def PlanSubItemAction(iitem, mgcode):
                 return 
             else:
                 try:
-                    systemsetting = getModelFileNameAndCurErrLevel()
+                    systemsetting = getModelFileNameAndCurErrLevel("isMeter")
                     systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
                                                                     systemsetting["curerrlevel"])
                     # 检测图片并返回检测类型、检测state
@@ -370,7 +374,7 @@ def PlanSubItemAction(iitem, mgcode):
                         # print("errorimg1:", errorimg1)
                         InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
                 except Exception as e:
-                    print(e)
+                    print(f"[ctlopt = 1]Meter image detect error:{e}, filePath:{filePath}")
 
     else:
         # 3、其他情况（没有检修区域，没有可控制状态   直接检测or表计任务）
@@ -438,7 +442,7 @@ def PlanSubItemAction(iitem, mgcode):
                 return 
             else:
                 try:
-                    systemsetting = getModelFileNameAndCurErrLevel()
+                    systemsetting = getModelFileNameAndCurErrLevel("isMeter")
                     systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
                                                                     systemsetting["curerrlevel"])
                     # 检测图片并返回检测类型、检测state
@@ -455,7 +459,7 @@ def PlanSubItemAction(iitem, mgcode):
                         # print("errorimg1:", errorimg1)
                         InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
                 except Exception as e:
-                    print(e)
+                    print(f"[ctlopt=0]Meter image detect error:{e}, filePath:{filePath}")
 
     # #需要控制
     # if int(iitem["ctlopt"]) == 1:
