@@ -15,6 +15,7 @@ import cv2
 from datetime import datetime, timedelta
 from PIL import Image,ImageDraw
 import uuid
+from common.imageCropped import * # 表计任务图片分割处理
 
 qDetectTask = Queue()
 
@@ -40,10 +41,14 @@ color_mapping = {
     "resolved_alert": (188, 143, 143),  # 淡玫瑰红色，用于已解决的告警（可选）
 }
 
-def getModelFileNameAndCurErrLevel():
+# 向下兼容处理：默认按flag为关键字查找；当输入isMeter时查看是否有表计模型
+def getModelFileNameAndCurErrLevel(flag_name="flag"):
     systemsetting = {}
-    sqltotal = "select a.filename,a.id from m_model a where a.flag = 1"
+    sqltotal = "select a.filename,a.id from m_model a where a.{} = 1".format(flag_name)
     totaldata = db.select_db(sqltotal)
+    if len(totaldata) <= 0:
+        print(f"[ERROR]No element found in m_model, flag_name:{flag_name}")
+        return
     #print("getSystemConfig:", totaldata[0]["filename"])
     systemsetting["filename"] = totaldata[0].get("filename")  # 避免 KeyError
     systemsetting["fileid"] = totaldata[0].get("id")
@@ -78,24 +83,25 @@ def is_file_readable_with_content(file_path):
     检查文件是否存在、可读以及不为空。
 
     :param file_path: 文件的路径
-    :return: 如果文件存在、可读且不为空，则返回True；否则返回False
+    :return: 如果文件存在、可读且不为空，则返回0；
+             否则返回对应错误码:4:文件不存在, 5:文件不可读, 6:文件为空
     """
     # 检查文件是否存在
     if not os.path.exists(file_path):
-        return False
+        return 4
 
         # 检查文件是否有读取权限
     if not os.access(file_path, os.R_OK):
-        return False
+        return 5
 
         # 检查文件是否为空
     # 使用os.stat()获取文件大小，如果大小为0，则认为是空文件
     file_size = os.stat(file_path).st_size
     if file_size == 0:
-        return False
+        return 6
     print("file_size:",file_size)
         # 如果通过了所有检查，则文件是可读的且不为空
-    return True
+    return 0
 
 
 # 更新对应巡视任务的上一次执行时间和当前任务的任务唯一码
@@ -124,7 +130,8 @@ def getTableNextID(TableName):
     return id
 
 #巡视任务子项 执行函数
-def sendOptInfoToDev(optipaddr, yiqiid,port=8082, timeout=30):
+# 机器人移动的最大时间一分半左右
+def sendOptInfoToDev(optipaddr, yiqiid,port=8082, timeout=180):
     """
     通过TCP发送命令并根据响应或超时判断结果
 
@@ -224,31 +231,6 @@ def UpdateSubPlanCheckResultByHisid(hisid, errinfo, errid, errtype, detectresult
     '''.format(errinfo,errid, errtype, detectresult, hisid )
     db.execute_db(sqlstr)
 
-# 更新表计内容中的图片名称
-# input：
-#       planinfoid：   巡视任务子项ID
-#       meterimgname：  表计图片名称
-def _UpdateSubPlanMeterInfoImageNameByPlanInfoID(planinfoid, meterimgname):
-    table_name = "m_visitationplaninfo_meter"
-    # 如果输入的图像名字带路径，则去掉路径
-    if os.path.isabs(meterimgname):
-        meterimgname = os.path.basename(meterimgname)
-    try:
-        planinfoid = int(planinfoid)
-        sqlstr = '''
-        UPDATE {}
-            SET 
-            imgname = '{}'
-            WHERE 
-            planinfoid = {}
-        '''.format(table_name, meterimgname, planinfoid)
-        db.execute_db(sqlstr)
-        print("Success:_UpdateSubPlanMeterInfoImageNameByPlanInfoID sql:", sqlstr)
-        return 0
-    except Exception as e:
-        print("Failed:update {} image:{}".format(table_name, e))
-        return 1
-
 
 def PlanSubItemAction(iitem, mgcode):
     if iitem["id"] is None:
@@ -329,7 +311,7 @@ def PlanSubItemAction(iitem, mgcode):
             NVRInfo["channel"],  # 通道号
             watchpoint,  # 预置点编号
             imgfilenameonly,  # 输出文件名
-            5  # 等待时间（秒）
+            15  # 等待时间（秒）
         )
         if success == False:
             status_data["DownLoadImage"] = "Download Image Failed"
@@ -367,25 +349,32 @@ def PlanSubItemAction(iitem, mgcode):
             print("参数:", hisid, errstr, errid, errtype, resultstr)
 
             # 将图片名称更新到表计信息表中
-            _UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+            UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
 
-            try:
-                systemsetting = getModelFileNameAndCurErrLevel()
-                systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
-                                                                 systemsetting["curerrlevel"])
-                # 检测图片并返回检测类型、检测state
-                print(imgfilenameonly, systemsetting)
-                detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
-            except Exception as e:
-                print(e)
-            stat1 = detectImage_sigleresult.get("state")
-            # print("stat1:", stat1)
-            errortype1 = detectImage_sigleresult.get("errortype")
-            # print("errortype1:", errortype1)
-            errorimg1 = os.path.basename(imgfilenameonly)
-            # print("errorimg1:", errorimg1)
-            print("NVRInfo", NVRInfo)
-            InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+            croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
+            if croppedCnt <= 0:
+                print("[Warnning]No Cropped images detect needed, stop detected.")
+                return 
+            else:
+                try:
+                    systemsetting = getModelFileNameAndCurErrLevel("isMeter")
+                    systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
+                                                                    systemsetting["curerrlevel"])
+                    # 检测图片并返回检测类型、检测state
+                    print(imgfilenameonly, systemsetting)
+                    print("NVRInfo", NVRInfo)
+                    for filePath in filesInfo["filepath"]:
+                        detectImage_sigleresult = DetectImage(filePath, systemsetting)
+
+                        stat1 = detectImage_sigleresult.get("state")
+                        # print("stat1:", stat1)
+                        errortype1 = detectImage_sigleresult.get("errortype")
+                        # print("errortype1:", errortype1)
+                        errorimg1 = os.path.basename(imgfilenameonly)
+                        # print("errorimg1:", errorimg1)
+                        InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+                except Exception as e:
+                    print(f"[ctlopt = 1]Meter image detect error:{e}, filePath:{filePath}")
 
     else:
         # 3、其他情况（没有检修区域，没有可控制状态   直接检测or表计任务）
@@ -410,7 +399,7 @@ def PlanSubItemAction(iitem, mgcode):
             NVRInfo["channel"],  # 通道号
             watchpoint,  # 预置点编号
             imgfilenameonly,  # 输出文件名
-            5  # 等待时间（秒）
+            15  # 等待时间（秒）
         )
         if success == False:
             status_data["DownLoadImage"] = "Download Image Failed"
@@ -428,7 +417,7 @@ def PlanSubItemAction(iitem, mgcode):
                 systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
                                                                  systemsetting["curerrlevel"])
                 # 检测图片并返回检测类型、检测state
-                print(imgfilenameonly, systemsetting)
+                print(f"get image name:{imgfilenameonly}, systemsetting:{systemsetting}")
                 detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
             except Exception as e:
                 print(e)
@@ -446,27 +435,31 @@ def PlanSubItemAction(iitem, mgcode):
             print("该摄像头不可可控的是表计任务")
             print("参数:", hisid, errstr, errid, errtype, resultstr)
 
-            # 将图片名称更新到表计信息表中
-            _UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+            UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+            croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
+            if croppedCnt <= 0:
+                print("[Warnning]No Cropped images detect needed, stop detected.")
+                return 
+            else:
+                try:
+                    systemsetting = getModelFileNameAndCurErrLevel("isMeter")
+                    systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
+                                                                    systemsetting["curerrlevel"])
+                    # 检测图片并返回检测类型、检测state
+                    print(imgfilenameonly, systemsetting)
+                    print("NVRInfo", NVRInfo)
+                    for filePath in filesInfo["filepath"]:
+                        detectImage_sigleresult = DetectImage(filePath, systemsetting)
 
-            try:
-                systemsetting = getModelFileNameAndCurErrLevel()
-                systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
-                                                                 systemsetting["curerrlevel"])
-                # 检测图片并返回检测类型、检测state
-                print(imgfilenameonly, systemsetting)
-                detectImage_sigleresult = DetectImage(imgfilenameonly, systemsetting)
-            except Exception as e:
-                print(e)
-            stat1 = detectImage_sigleresult.get("state")
-            # print("stat1:", stat1)
-            errortype1 = detectImage_sigleresult.get("errortype")
-            # print("errortype1:", errortype1)
-            errorimg1 = os.path.basename(imgfilenameonly)
-            # print("errorimg1:", errorimg1)
-            print("NVRInfo", NVRInfo)
-            InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
-
+                        stat1 = detectImage_sigleresult.get("state")
+                        # print("stat1:", stat1)
+                        errortype1 = detectImage_sigleresult.get("errortype")
+                        # print("errortype1:", errortype1)
+                        errorimg1 = os.path.basename(imgfilenameonly)
+                        # print("errorimg1:", errorimg1)
+                        InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+                except Exception as e:
+                    print(f"[ctlopt=0]Meter image detect error:{e}, filePath:{filePath}")
 
     # #需要控制
     # if int(iitem["ctlopt"]) == 1:
@@ -656,26 +649,7 @@ def getOverhaulArearoom_Cameras(Camera_id):
     OverhaulArea_starttime = ''
     OverhaulArea_endtime = ''
     Overhaulproomresults=None
-    # if select_maxid_result[0]['maxid']==id:
-    #     Overhaulsql = "select * from m_overhaularea where  id= {}".format(id)
-    #     totaldata = db.select_db(Overhaulsql)
-    #     print("OverhaulAreaCameras:", totaldata)
-    #     for iitem in totaldata:
-    #         OverhaulArea_endtime=iitem['endtime']
-    #         OverhaulArea_starttime=iitem['starttime']
-    #         OverhaulAreaRooms=iitem['roomids'].split(",")
-    #         print(OverhaulAreaRooms)
-    #         int_room_list = [int(num) for num in OverhaulAreaRooms]
-    #         roomids_str= ', '.join(map(str, int_room_list))
-    #         selectroomcamerasql="select camera_id from m_camera where  roomid in ({})".format(roomids_str)
-    #         totaldata1 = db.select_db(selectroomcamerasql)
-    #         print(totaldata1)
-    #         for cameraid in totaldata1:
-    #             OverhaulAreaCameras.append(cameraid['camera_id'])
-    #         print("OverhaulAreaCameras",OverhaulAreaCameras)
-    #     return OverhaulAreaCameras,OverhaulArea_starttime,OverhaulArea_endtime
-    # else:
-    #     return OverhaulAreaCameras, OverhaulArea_starttime, OverhaulArea_endtime
+
     print("判断该摄像头是否在检修区", Camera_id)
     select_roomid_bycamera_id = 'select roomid from m_camera where camera_id={}'.format(Camera_id)
     select_roomid_result = db.select_db(select_roomid_bycamera_id)
@@ -684,22 +658,23 @@ def getOverhaulArearoom_Cameras(Camera_id):
         OverhaulAreaCameras_bool = False
         OverhaulArea_starttime = ''
         OverhaulArea_endtime = ''
-
     else:
-        roomid = select_roomid_result[0]["roomid"]
-        Overhaulproomsql = "select * from v_overhaularea where  room_id= {}".format(roomid)
-        Overhaulproomresults = db.select_db(Overhaulproomsql)
-        if Overhaulproomresults is None or Overhaulproomresults == '':
-            OverhaulAreaCameras_bool = False
-            OverhaulArea_starttime = ''
-            OverhaulArea_endtime = ''
-        else:
-            OverhaulAreaCameras_bool = True
-            print("Overhaulproomresults:", Overhaulproomresults)
-            for items in Overhaulproomresults:
-                OverhaulArea_endtime = items['merged_end']
-                OverhaulArea_starttime = items['merged_start']
-
+        try:
+            roomid = select_roomid_result[0]["roomid"]
+            Overhaulproomsql = "select * from m_overhaularea where  room_id= {}".format(roomid)
+            Overhaulproomresults = db.select_db(Overhaulproomsql)
+            if Overhaulproomresults is None or Overhaulproomresults == '':
+                OverhaulAreaCameras_bool = False
+                OverhaulArea_starttime = ''
+                OverhaulArea_endtime = ''
+            else:
+                OverhaulAreaCameras_bool = True
+                print("Overhaulproomresults:", Overhaulproomresults)
+                for items in Overhaulproomresults:
+                    OverhaulArea_endtime = items['merged_end']
+                    OverhaulArea_starttime = items['merged_start']
+        except Exception as e:
+            print("get info from m_overhaularea faile:", e)
     return OverhaulAreaCameras_bool, OverhaulArea_starttime, OverhaulArea_endtime
 
 
@@ -783,7 +758,7 @@ def _CheckTaskQueueIsEmpty(mqDetectTask):
     if hasattr(mqDetectTask, 'qsize'):
         if mqDetectTask.qsize() == 0:
             if loop_for_queue_cnt == 5:
-                print("Work Thread Queue is empty, wait for tasks...")
+                print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),"Work Thread Queue is empty, watting...")
                 loop_for_queue_cnt = 0
             else:
                 loop_for_queue_cnt += 1
@@ -879,7 +854,7 @@ def udp_server(mqDetectTask,host='0.0.0.0', port=8009):
                 'errfrom': 1, # 告警来源: 1:检测终端; 2:系统任务
                 'revint': 0,
                 'revstr': "0",
-                'state': 0,
+                'state': 0,   # 0:检测中；1：检测正常；2：检测提示；3：检测告警；4下载图片失败
                 'flag': 0,
                 'gifname':pd[6],
                 'optflag1':0,
@@ -1136,7 +1111,8 @@ def DetectImage(imgfilenameonly,systemsetting):
     print("DetectImage:", imgfilenameonly,systemsetting)
     type_counts = {str(k): 0 for k in systemsetting["info"].keys()}# 初始化类型计数器
     model = YOLO(systemsetting["filename"])
-    if is_file_readable_with_content(imgfilenameonly):
+    img_stat = is_file_readable_with_content(imgfilenameonly)
+    if 0 == img_stat:
         with Image.open(imgfilenameonly) as img:
             rgb_img = img.convert("RGB")
             result=model.predict(source=imgfilenameonly)
@@ -1174,7 +1150,11 @@ def DetectImage(imgfilenameonly,systemsetting):
             detectImage_result["errortype"]=most_common_type
             # print(detectImage_result)
             return detectImage_result
-
+    else:
+        print(f"Image file {imgfilenameonly} is not readable or has no content.")
+        detectImage_result["state"] = img_stat  # 文件不可读状态
+        detectImage_result["errortype"] = "File Not Readable"
+        return detectImage_result
 
 """ 2025年8月12日 检查并删除检修区域过期数据"""
 def _check_and_delete():

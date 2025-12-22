@@ -4386,7 +4386,7 @@ def UpdateOverhaulAreaRooms():
 # params:
 #   optipaddr: 机器人的IP地址
 #   yiqiid:  发送的命令，可以是字符串或集合类型
-def _sendOptInfoToDev(optipaddr,  yiqiid, port=8081, timeout=60):
+def _sendOptInfoToDev(optipaddr,  yiqiid, port=8082, timeout=180):
     """
     通过TCP发送命令并根据响应或超时判断结果
 
@@ -4399,7 +4399,7 @@ def _sendOptInfoToDev(optipaddr,  yiqiid, port=8081, timeout=60):
     返回:
         bool: True表示成功，False表示失败
     """
-    print("sendOptInfoToDev IP:{optipaddr},port:{port}, opt_cmd:{yiqiid}")
+    print(f"sendOptInfoToDev IP:{optipaddr},port:{port}, opt_cmd:{yiqiid}")
     try:
         # 创建TCP套接字
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -4424,6 +4424,7 @@ def _sendOptInfoToDev(optipaddr,  yiqiid, port=8081, timeout=60):
             start_time = time.time()
             try:
                 # 接收响应
+                # 如果响应里面有数据，处理接收数据部份
                 response = s.recv(1024).decode().strip()
                 print(f"收到响应: {response}")
 
@@ -4455,6 +4456,17 @@ def GetAllRobotInfo():
         req.msg = "未设置机器人信息"
         return json.dumps(req.__dict__, ensure_ascii=False)
 
+    json_list = []
+    for i in totaldata:
+        if i["create_time"] != None and i["create_time"] != '':
+            i["create_time"] = i["create_time"].strftime("%Y-%m-%d %H:%M:%S")
+        json_list.append(i)
+
+    print("GetAllRobotInfo:", totaldata)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 '''
    30.1 获取指定ID的轨道机器人信息
@@ -4523,6 +4535,11 @@ def GetCamera_pointsByrobotid():
     current_app.logger.info('GetAllRobotpointID:{}')
     sqltotal = "select id, point_type, pos_x, pos_y, create_time from {} where robot_id = {}".format(table_name, robot_id)
     totaldata = db.select_db(sqltotal)
+    if len(totaldata) <= 0 or totaldata is None:
+        req.code = 1
+        req.msg = "未设置机器人ID为:{}的点位信息".format(robot_id)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
     json_list = []
     for i in totaldata:
         if i["create_time"] != None and i["create_time"] != '':
@@ -4709,8 +4726,8 @@ def RobotControl_command():
         req.msg = "No robot found in database:" + table_name + " with ID:" + robot_id
         return json.dumps(req.__dict__, ensure_ascii=False)
 
-    robot_ip    = iitem[0]["robot_ip"]
-    robot_port  = iitem[0]["robot_port"]
+    robot_ip    = iitem[0]["robot_server_ip"]
+    robot_port  = iitem[0]["robot_server_port"]
 
     # 拼接发送命令字符串
     str_cmd = str(opt_cmd) + ' ' + str(opt_param)

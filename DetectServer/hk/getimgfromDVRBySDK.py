@@ -371,8 +371,8 @@ def camera_control_preset(ip, port, username, password, channel, command, preset
 if __name__ == "__main__":
     print(SDK_PATH)
     #SDK_PATH = r"C:\\NVRDownloadImg"
-    DEVICE_IP = "192.168.0.168"
-    DEVICE_PORT = 8000
+    DEVICE_IP = "192.168.20.30"
+    DEVICE_PORT = 9001
     USERNAME = "admin"
     PASSWORD = "zskj1225"
     CHANNEL = 35

@@ -11,7 +11,7 @@
  Target Server Version : 80042 (8.0.42)
  File Encoding         : 65001
 
- Date: 11/12/2025 11:49:39
+ Date: 17/12/2025 11:01:34
 */
 
 SET NAMES utf8mb4;
@@ -33,7 +33,7 @@ CREATE TABLE `m_alert`  (
   `sts` int NOT NULL,
   `create_time` datetime NOT NULL,
   PRIMARY KEY (`alert_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_alert
@@ -3812,8 +3812,8 @@ DROP TABLE IF EXISTS `m_robot`;
 CREATE TABLE `m_robot`  (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '序列号ID',
   `robot_name` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '机器人名称',
-  `robot_ip` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '机器人IP地址',
-  `robot_port` int NOT NULL COMMENT '机器人端口号',
+  `robot_server_ip` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '机器人服务器IP地址',
+  `robot_server_port` int NOT NULL COMMENT '机器人服务器端口号',
   `sts` int NULL DEFAULT 1 COMMENT '状态，1表示启用，0表示禁用',
   `station_id` int NOT NULL COMMENT '所属站点ID',
   `roomid` int NULL DEFAULT 0 COMMENT '所属房间ID',
@@ -3825,15 +3825,15 @@ CREATE TABLE `m_robot`  (
   `pos_x` double(10, 2) NULL DEFAULT 0.00 COMMENT '机器人坐标X,单位米，保留两位小数',
   `pos_y` double(10, 2) NULL DEFAULT 0.00 COMMENT '机器人坐标Y,单位米，保留两位小数',
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `optipaddr` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT 'None' COMMENT '操作IP地址',
-  `optserial` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT 'None' COMMENT '操作序列号',
+  `optipaddr` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT 'None' COMMENT '机器人操作IP地址',
+  `optserial` int NULL DEFAULT 0 COMMENT '操作序列号:关联m_operatorlog表的主键ID',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '机器人基本信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '机器人基本信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of m_robot
 -- ----------------------------
-INSERT INTO `m_robot` VALUES (1, '会展中心', '127.0.0.1', 8082, 1, 1, 28, 28, 33, 28, 186, NULL, NULL, NULL, '2025-11-06 11:31:00', '192.168.1.240', NULL);
+INSERT INTO `m_robot` VALUES (1, '会展中心', '192.168.1.240', 8082, 1, 1, 28, 28, 33, 28, 186, NULL, NULL, NULL, '2025-11-06 11:31:00', '192.168.1.240', NULL);
 
 -- ----------------------------
 -- Table structure for m_robot_point
@@ -4086,7 +4086,7 @@ CREATE TABLE `m_userinfo`  (
   `job` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL,
   `updatetime` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of m_userinfo
