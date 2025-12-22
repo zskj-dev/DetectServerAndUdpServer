@@ -758,7 +758,7 @@ def _CheckTaskQueueIsEmpty(mqDetectTask):
     if hasattr(mqDetectTask, 'qsize'):
         if mqDetectTask.qsize() == 0:
             if loop_for_queue_cnt == 5:
-                print("Work Thread Queue is empty, wait for tasks...")
+                print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),"Work Thread Queue is empty, watting...")
                 loop_for_queue_cnt = 0
             else:
                 loop_for_queue_cnt += 1
