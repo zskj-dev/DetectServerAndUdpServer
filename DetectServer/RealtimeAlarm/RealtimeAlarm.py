@@ -4123,7 +4123,7 @@ def AddCamera_point():
         return json.dumps(req.__dict__, ensure_ascii=False)
     current_app.logger.info('AddCamera_point   camera_id:{},point_info:{},point_type:{},'
                             'camera_type:{},' 'preset_id:{}' 'robot_point_id:{}'
-                            .format(0, camera_id, point_info, point_type, camera_type,preset_id,robot_point_id))
+                            .format(camera_id, point_info, point_type, camera_type,preset_id,robot_point_id))
 
     select_maxid_sql = 'select max(point_id) as maxid from m_camera_point'
     select_maxid_result = db.select_db(select_maxid_sql)
@@ -4546,11 +4546,11 @@ def GetRobotInfoByCamID():
     cam_id = request.form.get("cam_id")
     print("cam_id:", cam_id)
   
-    current_app.logger.info('GetAllRobotpointID:{}')
+    current_app.logger.info('GetRobotInfoByCamID:{}')
     sqltotal = "select * from {} where camera_id = {}".format(table_name, cam_id)
     totaldata = db.select_db(sqltotal)
     if len(totaldata) <= 0 or totaldata is None:
-        req.code = 1
+        req.code = 0
         req.msg = "未设置机器人信息"
         return json.dumps(req.__dict__, ensure_ascii=False)
 
