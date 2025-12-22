@@ -24,7 +24,7 @@ def UpdateSubPlanMeterInfoImageNameByPlanInfoID(planinfoid, meterimgname):
         meterimgname = os.path.basename(meterimgname)
 
     if not db.checkIdExist(table_name, planinfoid, "planinfoid"):
-        print(f"Not found id: {planinfoid} in {table_name}")
+        print(f"Not found planinfoid: {planinfoid} in {table_name}")
         return 1
     try:
         up_dic = {
@@ -34,7 +34,7 @@ def UpdateSubPlanMeterInfoImageNameByPlanInfoID(planinfoid, meterimgname):
         wheresql = "planinfoid={};".format(planinfoid)
 
         db.updateData(table_name, up_dic, wheresql)
-        print("UpdateSubPlanMeterInfoImageNameByPlanInfoID success:",)
+        print("UpdateSubPlanMeterInfoImageNameByPlanInfoID success.")
         return 0
     except Exception as e:
         print("Failed:update {} image:{}".format(table_name, e))
@@ -51,24 +51,21 @@ def _get_camera_positions(camid, watchpoint):
     select_result = db.select_db(sqlstr)
     
     if not select_result or len(select_result) <= 0:
-        print(f"Not found for camid:{camid} and watchpoint:{watchpoint}")
+        print(f"[Error]Not found for camid:{camid} and watchpoint:{watchpoint} in {TableName_MeternamePoint}")
         return 0, None
     
     return len(select_result), select_result
 
-def getMeterImageFromCameraCapture(planinfoid, camid, watchpoint, meterimgname=None, 
-                                   image_data=None, image_path=None):
+def getMeterImageFromCameraCapture(camid, watchpoint, image_path, image_data = None):
     """
     从摄像头抓拍的图片中，根据坐标取出单个表记图片
     
     参数:
-        planinfoid: 计划ID
         camid: 摄像头ID
         watchpoint: 观察点
         meterimgname: 表记图片名称
-        image_data: 原始图像数据（字节流）
         image_path: 原始图像路径（如果提供image_data，则优先使用）
-    
+        image_data: 原始图像数据（字节流）    
     返回:
         dict: 包含匹配个数和具体数据流
     """
@@ -88,7 +85,7 @@ def getMeterImageFromCameraCapture(planinfoid, camid, watchpoint, meterimgname=N
         # 从文件路径读取图像
         original_image = cv2.imread(image_path)
     else:
-        print("没图你让我分析个鸡毛")
+        print("[Error]input image_data & image_path is NULL, stop.")
         return {"count": 0, "images": []}
     
     if original_image is None:
@@ -234,7 +231,6 @@ def visualize_crops(image_path, positions, save_path=None):
 def apiImageCropped(planinfoid,camid, watchpoint, image_path):
 
     result = getMeterImageFromCameraCapture(
-        0,
         camid,
         watchpoint,
         image_path
@@ -255,7 +251,6 @@ def example_usage():
     """
     # 示例1: 从文件路径读取图像
     result = getMeterImageFromCameraCapture(
-        planinfoid="1",
         camid="82",
         watchpoint="1",
         image_path="D:\\01_work\\01_ZSXK\\src\\DetectServerAndUdpServer\\DetectServer\\runs\\images\\fe45ee16-7623-40a4-aa6b-3e9fde52d8db.jpg"
