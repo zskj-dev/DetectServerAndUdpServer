@@ -8,6 +8,7 @@ from typing import List, Tuple, Dict, Union
 from PIL import Image
 # 先尝试这样的引用
 from common.mysqloptor import db
+from config.setting import CROPPED_IMAGES_PATH
 # import_helper.py
 import sys
 import os
@@ -96,6 +97,7 @@ def getMeterImageFromCameraCapture(camid, watchpoint, image_path, image_data = N
     img_height, img_width = original_image.shape[:2]
     
     # 存储所有裁剪结果的列表
+    # 使用与image_path同级目录
     cropped_images = []
     
     for i, pos_data in enumerate(match_result):
@@ -140,7 +142,7 @@ def getMeterImageFromCameraCapture(camid, watchpoint, image_path, image_data = N
             print(f"处理第{i+1}个坐标时出错: {e}")
             continue
         except Exception as e:
-            print(f"裁剪图像时发生未知错误: {e}")
+            print(f"裁剪图像时发生未知错误: {e}, for index:{i + 1}")
             continue
     
     return {
@@ -239,7 +241,7 @@ def apiImageCropped(planinfoid,camid, watchpoint, image_path):
     print(f"找到 {result['count']} 个表记区域")
     
     # 保存裁剪的图像
-    saved_files = save_cropped_images(result)
+    saved_files = save_cropped_images(result, CROPPED_IMAGES_PATH)
     print("saved_files:", saved_files)
 
     return result['count'], saved_files

@@ -17,6 +17,5 @@ EXPIRE_TIME = 3600
 #MD5
 MD5_SALT = "detectalarmsystem"
 
-
-
-
+# CROPPED IMAGES
+CROPPED_IMAGES_PATH = "./runs/cropped_images"
