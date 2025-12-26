@@ -2171,11 +2171,11 @@ def AddVisitationPlan():
     taskplanclass = request.form.get("taskplanclass")
     taskplantype = request.form.get("taskplantype")
     taskplanstate = request.form.get("taskplanstate")
-    taskpanh = request.form.get("taskpanh")
+    taskplanh = request.form.get("taskplanh")
     taskplanf = request.form.get("taskplanf")
     taskplanm = request.form.get("taskplanm")
     if taskplanname == None or taskplanclass == None or taskplantype == None \
-            or taskplanstate == None or taskpanh == None or taskplanf == None or taskplanm == None:
+            or taskplanstate == None or taskplanh == None or taskplanf == None or taskplanm == None:
         req.code = 1
         req.msg = "参数不正确"
         return json.dumps(req.__dict__, ensure_ascii=False)
@@ -2194,14 +2194,15 @@ def AddVisitationPlan():
         'taskplanclass': taskplanclass,
         'taskplantype': taskplantype,
         'taskplanstate': taskplanstate,
-        'taskpanh': taskpanh,
+        'taskplanh': taskplanh,
         'taskplanf': taskplanf,
         'taskplanm': taskplanm,
         'curmagicserial': '',
         'curprogress': 0,
         'predatetime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'createtime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'taskplancount':0
+        'taskplancount':0,
+        'isrunnow': 0,
     }
     print("AddVisitationPlan Inserting data:", insert_dic)
     db.insertData(TableName, insert_dic)
