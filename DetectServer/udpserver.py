@@ -1115,7 +1115,8 @@ def DetectImage(imgfilenameonly,systemsetting):
     if 0 == img_stat:
         with Image.open(imgfilenameonly) as img:
             rgb_img = img.convert("RGB")
-            result=model.predict(source=imgfilenameonly)
+            # TODO:测试的假数据，写死
+            result=model.predict(source=rgb_img, conf = 0.1,  imgsz=640)
             # print("result:",result)
             boxes = result[0].boxes.data.cpu().numpy()
             for box in boxes:

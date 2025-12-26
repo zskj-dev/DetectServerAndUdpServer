@@ -91,7 +91,7 @@ def receive_file(file_path, buffer_size=1024):
 def getSystemConfig():
     sqltotal = "select errortype,errorname,alarmtype  from m_errortype"
     totaldata = db.select_db(sqltotal)
-    print("getSystemConfig:",totaldata)
+    print("getSystemConfig info:",totaldata)
     return totaldata
 
 def checkErrorTypeAlarm(typeval):
@@ -106,16 +106,16 @@ def checkErrorTypeAlarm(typeval):
 
     return 1
 
-def getModelFileNameAndCurErrLevel():
+def getModelFileNameAndCurErrLevel(flag_name="flag"):
     systemsetting = {}
-    sqltotal = "select a.filename,a.id from m_model a where a.flag = 1"
+    sqltotal = "select a.filename,a.id from m_model a where a.{} = 1".format(flag_name)
     totaldata = db.select_db(sqltotal)
-    print("getSystemConfig:", totaldata[0]["filename"])
+    print("getSystemConfig using model name:", totaldata[0]["filename"])
     systemsetting["filename"] = totaldata[0]["filename"]
     systemsetting["fileid"] = totaldata[0]["id"]
     sqltotal = "select curerrlevel from m_systemsetting"
     totaldata = db.select_db(sqltotal)
-    print("getSystemConfig:",totaldata[0]["curerrlevel"])
+    print("getSystemConfig using errlv:",totaldata[0]["curerrlevel"])
     systemsetting["curerrlevel"] = totaldata[0]["curerrlevel"]
     return systemsetting
 
