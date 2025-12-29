@@ -2528,6 +2528,39 @@ def GetVisitationPlanSubInfoById():
     req.data = totaldata
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+'''
+    21.10  下发立即执行当前任务
+'''
+@realtimealarm.route('/SetVisitationPlanStateToRunNow', methods=["post"])
+def SetVisitationPlanStateToRunNowPlan():
+
+    taskid = request.form.get("id")
+    req = ReqResult() 
+
+    current_app.logger.info('GetVisitationHistoryPlan ')
+
+    if not db.checkIdExist("m_visitationplan", taskid):
+        req.code = 1
+        req.msg = "任务ID不存在"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    select_sql = "select isrunnow from m_visitationplan where id={};".format(taskid)
+    select_result = db.select_db(select_sql)
+    # 判断是否已经是立即执行状态
+    if select_result[0]['isrunnow'] == 1:
+        req.code = 2
+        req.msg = "任务已是立即执行状态且还未执行完成"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    isrunnow_dic                = {}
+    isrunnow_dic['isrunnow']    = 1
+    wheresql                    = 'id={};'.format(taskid)
+    db.updateData("m_visitationplan", isrunnow_dic, wheresql)
+
+    req.code = 0
+    req.msg = "操作成功"
+
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 
 '''
