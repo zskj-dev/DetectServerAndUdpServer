@@ -156,6 +156,9 @@ def sendOptInfoToDev(optipaddr, yiqiid,port=8082, timeout=180):
             s.connect((optipaddr, port))
             print(f"已成功连接到 {optipaddr}:{port}")
 
+            if isinstance(yiqiid, (set,list,tuple)):
+                yiqiid = ' '.join(map(str, yiqiid))
+
             # 发送消息（需要先将字符串编码为字节）
             message_bytes = str(yiqiid).encode('utf-8')
             s.sendall(message_bytes)
@@ -231,6 +234,31 @@ def UpdateSubPlanCheckResultByHisid(hisid, errinfo, errid, errtype, detectresult
     '''.format(errinfo,errid, errtype, detectresult, hisid )
     db.execute_db(sqlstr)
 
+# 更新表计内容中的图片名称
+# input：
+#       planinfoid：   巡视任务子项ID
+#       meterimgname：  表计图片名称
+def _UpdateSubPlanMeterInfoImageNameByPlanInfoID(planinfoid, meterimgname):
+    table_name = "m_visitationplaninfo_meter"
+    # 如果输入的图像名字带路径，则去掉路径
+    if os.path.isabs(meterimgname):
+        meterimgname = os.path.basename(meterimgname)
+    try:
+        planinfoid = int(planinfoid)
+        sqlstr = '''
+        UPDATE {}
+            SET 
+            imgname = '{}'
+            WHERE 
+            planinfoid = {}
+        '''.format(table_name, meterimgname, planinfoid)
+        db.execute_db(sqlstr)
+        print("Success:_UpdateSubPlanMeterInfoImageNameByPlanInfoID sql:", sqlstr)
+        return 0
+    except Exception as e:
+        print("Failed:update {} image:{}".format(table_name, e))
+        return 1
+
 
 def PlanSubItemAction(iitem, mgcode):
     if iitem["id"] is None:
@@ -281,7 +309,9 @@ def PlanSubItemAction(iitem, mgcode):
     #2、是否需要控制
     elif int(iitem["ctlopt"]) == 1:
         print("start send opt msg:", iitem["ctlopt"])
-        isok = sendOptInfoToDev(iitem["optipaddr"], iitem["yiqiid"])
+
+        cmd_list = str('7') + ' ' + str(iitem["yiqiid"])
+        isok = sendOptInfoToDev(iitem["optipaddr"], cmd_list)
         print("send opt over msg:", isok)
         if isok == False:
             status_data["OptJiQiRen"] = "send command info to JiQiRen failed!"
@@ -349,32 +379,35 @@ def PlanSubItemAction(iitem, mgcode):
             print("参数:", hisid, errstr, errid, errtype, resultstr)
 
             # 将图片名称更新到表计信息表中
-            UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
-
-            croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
-            if croppedCnt <= 0:
-                print("[Warnning]No Cropped images detect needed, stop detected.")
-                return 
+            if True != success:
+                print("[ctlopt=1]Do not update meter info image, beacuse imgage download failed.")
             else:
-                try:
-                    systemsetting = getModelFileNameAndCurErrLevel("isMeter")
-                    systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
-                                                                    systemsetting["curerrlevel"])
-                    # 检测图片并返回检测类型、检测state
-                    print(imgfilenameonly, systemsetting)
-                    print("NVRInfo", NVRInfo)
-                    for filePath in filesInfo["filepath"]:
-                        detectImage_sigleresult = DetectImage(filePath, systemsetting)
+                _UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+                
+                croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
+                if croppedCnt <= 0:
+                    print("[Warnning]No Cropped images detect needed, stop detected.")
+                    return 
+                else:
+                    try:
+                        systemsetting = getModelFileNameAndCurErrLevel("isMeter")
+                        systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
+                                                                        systemsetting["curerrlevel"])
+                        # 检测图片并返回检测类型、检测state
+                        print(imgfilenameonly, systemsetting)
+                        print("NVRInfo", NVRInfo)
+                        for filePath in filesInfo["filepath"]:
+                            detectImage_sigleresult = DetectImage(filePath, systemsetting)
 
-                        stat1 = detectImage_sigleresult.get("state")
-                        # print("stat1:", stat1)
-                        errortype1 = detectImage_sigleresult.get("errortype")
-                        # print("errortype1:", errortype1)
-                        errorimg1 = os.path.basename(imgfilenameonly)
-                        # print("errorimg1:", errorimg1)
-                        InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
-                except Exception as e:
-                    print(f"[ctlopt = 1]Meter image detect error:{e}, filePath:{filePath}")
+                            stat1 = detectImage_sigleresult.get("state")
+                            # print("stat1:", stat1)
+                            errortype1 = detectImage_sigleresult.get("errortype")
+                            # print("errortype1:", errortype1)
+                            errorimg1 = os.path.basename(imgfilenameonly)
+                            # print("errorimg1:", errorimg1)
+                            InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+                    except Exception as e:
+                        print(f"[ctlopt = 1]Meter image detect error:{e}, filePath:{filePath}")
 
     else:
         # 3、其他情况（没有检修区域，没有可控制状态   直接检测or表计任务）
@@ -435,31 +468,35 @@ def PlanSubItemAction(iitem, mgcode):
             print("该摄像头不可可控的是表计任务")
             print("参数:", hisid, errstr, errid, errtype, resultstr)
 
-            UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
-            croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
-            if croppedCnt <= 0:
-                print("[Warnning]No Cropped images detect needed, stop detected.")
-                return 
+            # 将图片名称更新到表计信息表中
+            if True != success:
+                print("[ctlopt=0]Do not update meter info image, beacuse imgage download failed.")
             else:
-                try:
-                    systemsetting = getModelFileNameAndCurErrLevel("isMeter")
-                    systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
-                                                                    systemsetting["curerrlevel"])
-                    # 检测图片并返回检测类型、检测state
-                    print(imgfilenameonly, systemsetting)
-                    print("NVRInfo", NVRInfo)
-                    for filePath in filesInfo["filepath"]:
-                        detectImage_sigleresult = DetectImage(filePath, systemsetting)
+                _UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
+                croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
+                if croppedCnt <= 0:
+                    print("[Warnning]No Cropped images detect needed, stop detected.")
+                    return 
+                else:
+                    try:
+                        systemsetting = getModelFileNameAndCurErrLevel("isMeter")
+                        systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
+                                                                        systemsetting["curerrlevel"])
+                        # 检测图片并返回检测类型、检测state
+                        print(imgfilenameonly, systemsetting)
+                        print("NVRInfo", NVRInfo)
+                        for filePath in filesInfo["filepath"]:
+                            detectImage_sigleresult = DetectImage(filePath, systemsetting)
 
-                        stat1 = detectImage_sigleresult.get("state")
-                        # print("stat1:", stat1)
-                        errortype1 = detectImage_sigleresult.get("errortype")
-                        # print("errortype1:", errortype1)
-                        errorimg1 = os.path.basename(imgfilenameonly)
-                        # print("errorimg1:", errorimg1)
-                        InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
-                except Exception as e:
-                    print(f"[ctlopt=0]Meter image detect error:{e}, filePath:{filePath}")
+                            stat1 = detectImage_sigleresult.get("state")
+                            # print("stat1:", stat1)
+                            errortype1 = detectImage_sigleresult.get("errortype")
+                            # print("errortype1:", errortype1)
+                            errorimg1 = os.path.basename(imgfilenameonly)
+                            # print("errorimg1:", errorimg1)
+                            InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
+                    except Exception as e:
+	                    print(f"[ctlopt=0]Meter image detect error:{e}, filePath:{filePath}")
 
     # #需要控制
     # if int(iitem["ctlopt"]) == 1:
@@ -653,7 +690,7 @@ def getOverhaulArearoom_Cameras(Camera_id):
     print("判断该摄像头是否在检修区", Camera_id)
     select_roomid_bycamera_id = 'select roomid from m_camera where camera_id={}'.format(Camera_id)
     select_roomid_result = db.select_db(select_roomid_bycamera_id)
-    if select_roomid_result == None or select_roomid_result == '':
+    if len(select_roomid_result) <= 0:
         print("room id not found ")
         OverhaulAreaCameras_bool = False
         OverhaulArea_starttime = ''
@@ -758,7 +795,7 @@ def _CheckTaskQueueIsEmpty(mqDetectTask):
     if hasattr(mqDetectTask, 'qsize'):
         if mqDetectTask.qsize() == 0:
             if loop_for_queue_cnt == 5:
-                print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),"Work Thread Queue is empty, watting...")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]Thread Queue is empty, waitting...")
                 loop_for_queue_cnt = 0
             else:
                 loop_for_queue_cnt += 1
