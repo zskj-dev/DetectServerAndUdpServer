@@ -6,6 +6,7 @@ import shutil
 from datetime import datetime
 
 from common.imageCroppedEnhanced import *
+from common.torch_clas_predict import *
 
 # 获取一个文件夹下的所有文件，不递归
 def get_files_from_folder(folder_path):
@@ -138,6 +139,22 @@ def test_image_cropped_enhanced():
         print(f"ROI尺寸: {detection['roi_size']}")
 
 
+def test_torch_classification():
+    class_names=['kaiguan1_guan', 'kaiguan1_kai', 'led_green_close', 'led_green_open', 'led_red_close', 'led_red_open']
+
+    # 打开文件夹，将文件夹内的所有文件，存放到file_paths中
+    path_to_detect = backup_folder("./runs/cropped_images/to_test")
+    files_in_one_path = get_files_from_folder(path_to_detect)
+
+    for filePath in files_in_one_path:
+        # test_image_path = "./testimgs/LED_RED_ON_17.jpg"  # 替换为你的测试图片路径
+        if os.path.exists(filePath):
+            pred_class, pred_conf = predict_image(filePath, class_names)
+            # 将结果写入文件或打印出来
+
+            print(f"文件路径：{filePath}，预测结果：{pred_class}，置信度：{pred_conf:.2f}%")
+        else:
+            print("测试图片不存在，请检查路径！")
 
 if __name__ == "__main__":
 
@@ -149,6 +166,8 @@ if __name__ == "__main__":
 
     # test_image_cropped()
 
-    test_image_cropped_enhanced()
+    # test_image_cropped_enhanced()
+
+    test_torch_classification()
     # print("图像裁剪功能已准备就绪")
     
