@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw
 import io
 
 import socket  # 下发机器人通知使用
-from hk.getimgfromDVRBySDK import * #
+from hk.getimgfromDVRBySDK_new import * #
 
 set_upload_path = 'images'
 set_result_path = 'images'
