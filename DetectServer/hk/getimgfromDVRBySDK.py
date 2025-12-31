@@ -1,6 +1,7 @@
 import os
 import ctypes
 from ctypes import *
+import datetime # 创建抓取图像的时间戳
 
 SDK_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)))#, "hk"
 class HikvisionCapture:
@@ -371,39 +372,60 @@ def camera_control_preset(ip, port, username, password, channel, command, preset
 if __name__ == "__main__":
     print(SDK_PATH)
     #SDK_PATH = r"C:\\NVRDownloadImg"
-    DEVICE_IP = "192.168.20.30"
-    DEVICE_PORT = 9001
+    DEVICE_IP = "192.168.0.168"
+    DEVICE_PORT = 8000
     USERNAME = "admin"
     PASSWORD = "zskj1225"
-    CHANNEL = 35
+    CHANNEL = 33
     PRESET_ID = 1  # 目标预置点编号
-    OUTPUT_FILE = "preset_capture1.jpg"
-    WAIT_SECONDS = 10  # 转动后等待时间
+    OUTPUT_FILE = f"preset_capture_1.jpg"
+    WAIT_SECONDS = 1  # 转动后等待时间
     SPEED = 3
+    channel_list = {33,34,35,36}
 
-    # success = capture_camera_image_at_preset(
+    print("=" * 10 + "在预置点抓图示例" + "=" * 10)
+    for CHANNEL in channel_list:
+        print("=" * 5 + f"抓取通道{CHANNEL}预置点图像" + "=" * 5)
+        now_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        success = capture_camera_image_at_preset(
+            # SDK_PATH,
+            DEVICE_IP,
+            DEVICE_PORT,
+            USERNAME,
+            PASSWORD,
+            CHANNEL,
+            PRESET_ID,
+            f"./runs/TestHKSDK/preset_capture_{CHANNEL}_{now_time}.jpg",
+            WAIT_SECONDS
+        )
+        if success:
+            print("预置点图像抓取成功")
+        else:
+            print("预置点图像抓取失败")
+
+    # success = camera_control_move(
     #     # SDK_PATH,
     #     DEVICE_IP,
     #     DEVICE_PORT,
     #     USERNAME,
     #     PASSWORD,
     #     CHANNEL,
-    #     PRESET_ID,
-    #     OUTPUT_FILE,
-    #     WAIT_SECONDS
+    #     22,
+    #     0,
+    #     #     SPEED
     # )
 
-    success = camera_control_move(
-        # SDK_PATH,
-        DEVICE_IP,
-        DEVICE_PORT,
-        USERNAME,
-        PASSWORD,
-        CHANNEL,
-        22,
-        0,
-        SPEED
-    )
+    # success = camera_control_move(
+    #     # SDK_PATH,
+    #     DEVICE_IP,
+    #     DEVICE_PORT,
+    #     USERNAME,
+    #     PASSWORD,
+    #     CHANNEL,
+    #     22,
+    #     0,
+    #     SPEED
+    # )
 
     # success = camera_control_preset(
     #     # SDK_PATH,
@@ -415,8 +437,3 @@ if __name__ == "__main__":
     #     39,
     #     PRESET_ID
     # )
-
-    if success:
-        print("预置点图像抓取成功")
-    else:
-        print("预置点图像抓取失败")
