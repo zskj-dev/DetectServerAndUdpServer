@@ -55,6 +55,12 @@ class ImageClassifier(nn.Module):
         x = self.classifier(x)
         return x
 
+def check_file_exists(file_path):
+    """检查文件是否存在"""
+    if not os.path.exists(file_path):
+        print(f"ERROR:文件不存在: {file_path}")
+        return False
+
 def predict_image(image_path, class_names):
     """
     单张图片分类预测
@@ -63,6 +69,9 @@ def predict_image(image_path, class_names):
     :return: 预测类别、置信度
     """
     # 加载模型
+    if not check_file_exists(MODEL_SAVE_PATH):
+        return None, None
+
     checkpoint = torch.load(MODEL_SAVE_PATH, map_location=DEVICE)
     num_classes = len(class_names)
     model = ImageClassifier(num_classes).to(DEVICE)
@@ -94,9 +103,48 @@ def predict_image(image_path, class_names):
     
     return predicted_class, confidence
 
+# 参照udpserver.py中DetectImage函数的调用方式
+def DetectImage(image_path, systemsetting):
+    """
+    使用图像分类模型对输入图像进行分类预测
+    参数:
+        image_path: 输入图像路径
+        systemsetting: 系统设置字典，包含分类模型相关配置
+    返回:
+        包含预测结果的字典
+    """
+    detectImage_result={
+        "errortype":"",
+        "state":""
+    }
+
+    class_names = systemsetting.get("class_names", [])
+    if not class_names:
+        print("ERROR: 系统设置中缺少'class_names'配置")
+        return {"state": -1, "errortype": "配置错误"}
+
+    pred_class, pred_conf = predict_image(image_path, class_names)
+    if pred_class is None:
+        return {"state": -1, "errortype": "模型加载失败"}
+
+
+    if pred_conf < 80.0:  # 置信度阈值80%
+        detectImage_result["state"] = 1 # 低置信度
+        detectImage_result["errortype"] = "低置信度"
+    else:
+        detectImage_result["state"] = 3 # 预测成功
+        detectImage_result["errortype"] = pred_class
+
+    return {
+        "state": 0,
+        "errortype": None,
+        "predicted_class": pred_class,
+        "confidence": pred_conf
+    }
+
 # ====================== 6. 主函数 ======================
 if __name__ == "__main__":
-    class_names=['kaiguan1_guan', 'kaiguan1_kai', 'led_green_close', 'led_绿_开', 'led_red_close', 'led_红色_开']
+    class_names=['kaiguan1_guan', 'kaiguan1_kai', 'led_green_close', 'led_green_open', 'led_red_close', 'led_red_open']
     test_image_path = "./testimgs/LED_RED_ON_17.jpg"  # 替换为你的测试图片路径
     if os.path.exists(test_image_path):
         pred_class, pred_conf = predict_image(test_image_path, class_names)

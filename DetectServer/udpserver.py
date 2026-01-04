@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from PIL import Image,ImageDraw
 import uuid
 from common.imageCropped import * # 表计任务图片分割处理
+from common.torch_clas_predict import * # 图像分类预测
 
 qDetectTask = Queue()
 
