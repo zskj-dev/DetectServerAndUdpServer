@@ -301,6 +301,6 @@ $RECYCLE.BIN/
 *.log
 *.pyc
 *.pt
-
+*.pth
 
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,bazel,cmake,linux,macos,windows,jetbrains+all,visualstudiocode
