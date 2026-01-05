@@ -423,7 +423,7 @@ class HikvisionCapture:
             return False
 
     # 使用外部EXE抓图，实时获取输出，只为提高像素
-    def capture_with_exe(nvrip, nvrport, username, password, channel, output_file):
+    def capture_with_exe(self, nvrip, nvrport, username, password, channel, output_file):
         exe_path = r"D:\x64\DetectAndDownload.exe"
         params = [nvrip, str(nvrport), username, password, str(channel), output_file]
 
@@ -552,9 +552,17 @@ class HikvisionCapture:
                 time.sleep(wait_seconds)
 
             # 抓图
-            return self.capture_with_exe(nvrip, nvrport, username, password, channel, output_file)
+            #循环抓5次，如果失败则继续抓图
+            for i in range(5):
+                ret_code = self.capture_with_exe(nvrip, nvrport, username, password, channel, output_file)
+                if ret_code == 0:
+                    return True
+                else:
+                    logger.warning(f"抓图失败，正在重试... ({i+1}/5)")
+                    time.sleep(1)  # 等待1秒后重试
             # return self.capture(channel, output_file)
-
+            logger.error("抓图失败，已达最大重试次数")
+            return False
         except Exception as e:
             logger.error(f"预置点抓图异常: {e}")
             logger.error(traceback.format_exc())
