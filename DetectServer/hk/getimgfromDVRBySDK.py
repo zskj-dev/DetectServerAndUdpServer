@@ -4,6 +4,7 @@ from ctypes import *
 import datetime # 创建抓取图像的时间戳
 
 
+import subprocess
 import sys
 import time
 import ctypes
@@ -421,6 +422,51 @@ class HikvisionCapture:
             
             return False
 
+    # 使用外部EXE抓图，实时获取输出，只为提高像素
+    def capture_with_exe(nvrip, nvrport, username, password, channel, output_file):
+        exe_path = r"D:\x64\DetectAndDownload.exe"
+        params = [nvrip, str(nvrport), username, password, str(channel), output_file]
+
+        cmd = [exe_path] + params
+        
+        try:
+            # 启动进程
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                # cwd=r"D:\x64", # 不设置目录，否则生成的图片路径会有问题
+                shell=True
+            )
+            
+            # 实时读取输出
+            while True:
+                output = process.stdout.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    print(f"输出: {output.strip()}")
+            
+            # 获取剩余输出和返回码
+            stdout, stderr = process.communicate()
+            return_code = process.returncode
+            
+            if stdout:
+                print(f"剩余输出: {stdout}")
+            if stderr:
+                print(f"错误: {stderr}")
+
+            # 判断是否生成了图片文件
+            if not os.path.exists(output_file):
+                return_code = -2  # 图片文件未生成
+        
+            return return_code
+            
+        except Exception as e:
+            print(f"执行出错: {e}")
+            return -1
+
     def goto_preset(self, channel, preset_id):
         """转动摄像头到指定预置点"""
         if self._logged_in < 0:
@@ -482,7 +528,7 @@ class HikvisionCapture:
             error_msg = self._get_error_message(error_code)
             return 4, f"预置点操作失败，错误码: {error_code} - {error_msg}"
 
-    def capture_at_preset(self, channel, preset_id, output_file, wait_seconds=3):
+    def capture_at_preset(self, nvrip, nvrport, username, password, channel, preset_id, output_file, wait_seconds=3):
         """转动到预置点，抓图，然后恢复原位"""
         if self._logged_in < 0:
             print("请先登录设备")
@@ -506,7 +552,8 @@ class HikvisionCapture:
                 time.sleep(wait_seconds)
 
             # 抓图
-            return self.capture(channel, output_file)
+            return self.capture_with_exe(nvrip, nvrport, username, password, channel, output_file)
+            # return self.capture(channel, output_file)
 
         except Exception as e:
             logger.error(f"预置点抓图异常: {e}")
@@ -630,7 +677,7 @@ def capture_camera_image_at_preset(ip, port, username, password, channel, preset
             return False
 
         # 在预置点抓图并恢复原位
-        return capturer.capture_at_preset(channel, preset_id, output_file, wait_seconds)
+        return capturer.capture_at_preset(ip, port, username, password, channel, preset_id, output_file, wait_seconds)
 
     except Exception as e:
         logger.error(f"预置点抓图异常: {e}")
