@@ -3,7 +3,7 @@ import json
 from multiprocessing import Process, Queue,Lock
 import socket
 
-from hk.getimgfromDVRBySDK_new import capture_camera_image_at_preset
+from hk.getimgfromDVRBySDK import capture_camera_image_at_preset
 from common.mysqloptor import db
 import time
 import datetime,os

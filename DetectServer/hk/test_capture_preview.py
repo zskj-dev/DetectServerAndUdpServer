@@ -18,6 +18,7 @@ import traceback
 from ctypes import *
 from typing import Tuple, Optional
 import weakref
+import subprocess
 
 # 配置日志
 logging.basicConfig(
@@ -1253,36 +1254,86 @@ def check_system_resources():
     
     print("-"*60)
 
+
+def run_exe_realtime_output(nvrip, nvrport, username, password, channel, output_file):
+    exe_path = r"D:\x64\DetectAndDownload.exe"
+    params = [nvrip, str(nvrport), username, password, str(channel), output_file]
+    
+    cmd = [exe_path] + params
+    
+    try:
+        # 启动进程
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            # cwd=r"D:\x64", # 不设置目录，否则生成的图片路径会有问题
+            shell=True
+        )
+        
+        # 实时读取输出
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                print(f"输出: {output.strip()}")
+        
+        # 获取剩余输出和返回码
+        stdout, stderr = process.communicate()
+        return_code = process.returncode
+        
+        if stdout:
+            print(f"剩余输出: {stdout}")
+        if stderr:
+            print(f"错误: {stderr}")
+
+        # 判断是否生成了图片文件
+        if not os.path.exists(output_file):
+            return_code = -2  # 图片文件未生成
+    
+        return return_code
+        
+    except Exception as e:
+        print(f"执行出错: {e}")
+        return -1
+
+
 # ========== 测试代码 ==========
 
 if __name__ == "__main__":
     # 测试1: 普通抓图带预览
-    print("测试1: 普通抓图带预览")
-    success = capture_image_with_preview(
-        ip="192.168.20.30",
-        port=9001,
-        username="admin",
-        password="zskj1225",
-        channel=35,
-        output_file="test_with_preview.jpg",
-        preview=True
-    )
-    print(f"抓图结果: {'成功' if success else '失败'}")
+    # print("测试1: 普通抓图带预览")
+    # success = capture_image_with_preview(
+    #     ip="192.168.20.30",
+    #     port=9001,
+    #     username="admin",
+    #     password="zskj1225",
+    #     channel=35,
+    #     output_file="test_with_preview.jpg",
+    #     preview=True
+    # )
+    # print(f"抓图结果: {'成功' if success else '失败'}")
     
-    # 测试2: 增强版抓图
-    print("\n测试2: 增强版抓图")
-    capturer = HikvisionCapture(SDK_PATH)
-    if capturer.initialize() and capturer.login("192.168.20.30", 9001, "admin", "zskj1225"):
-        result = capturer.capture_with_info(
-            channel=35,
-            output_file="enhanced_capture.jpg",
-            preview_option=True,
-            get_size=True,
-            resize=(640, 480)  # 调整为640x480
-        )
-        print(f"抓图结果: {result}")
-        capturer.logout()
-    
+    # # 测试2: 增强版抓图
+    # print("\n测试2: 增强版抓图")
+    # capturer = HikvisionCapture(SDK_PATH)
+    # if capturer.initialize() and capturer.login("192.168.20.30", 9001, "admin", "zskj1225"):
+    #     result = capturer.capture_with_info(
+    #         channel=35,
+    #         output_file="enhanced_capture.jpg",
+    #         preview_option=True,
+    #         get_size=True,
+    #         resize=(640, 480)  # 调整为640x480
+    #     )
+    #     print(f"抓图结果: {result}")
+    #     capturer.logout()
+
+    # 测试3: 调用外部EXE
+    ret = run_exe_realtime_output("192.168.20.30", 9001, "admin", "zskj1225", 37, "test_channel_37_03.jpg")
+    print(f"\n测试3: 外部EXE返回码: {ret}")
+
     # 测试3: 实时预览（需要GUI环境）
     # print("\n测试3: 实时预览")
     # realtime_preview_demo(

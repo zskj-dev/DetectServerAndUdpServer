@@ -459,7 +459,7 @@ class HikvisionCapture:
 
             # 判断是否生成了图片文件
             if not os.path.exists(output_file):
-                return_code = -2  # 图片文件未生成
+                return_code = 6  # 图片文件未生成
         
             return return_code
             
