@@ -60,6 +60,8 @@ def check_file_exists(file_path):
     if not os.path.exists(file_path):
         print(f"ERROR:文件不存在: {file_path}")
         return False
+    else:
+        return True
 
 def predict_image(image_path, class_names):
     """

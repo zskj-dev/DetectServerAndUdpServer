@@ -146,15 +146,22 @@ def test_torch_classification():
     path_to_detect = backup_folder("./runs/cropped_images/to_test")
     files_in_one_path = get_files_from_folder(path_to_detect)
 
-    for filePath in files_in_one_path:
-        # test_image_path = "./testimgs/LED_RED_ON_17.jpg"  # 替换为你的测试图片路径
-        if os.path.exists(filePath):
-            pred_class, pred_conf = predict_image(filePath, class_names)
-            # 将结果写入文件或打印出来
-
-            print(f"文件路径：{filePath}，预测结果：{pred_class}，置信度：{pred_conf:.2f}%")
-        else:
-            print("测试图片不存在，请检查路径！")
+    try:
+        for filePath in files_in_one_path:
+            # test_image_path = "./testimgs/LED_RED_ON_17.jpg"  # 替换为你的测试图片路径
+            if os.path.exists(filePath):
+                pred_class, pred_conf = predict_image(filePath, class_names)
+                # 将结果写入文件或打印出来
+                if pred_class is None:
+                    print(f"文件路径：{filePath}，预测失败！")
+                elif pred_conf is None:
+                    print(f"文件路径：{filePath}，预测结果：{pred_class}，置信度计算失败！")
+                else:
+                    print(f"文件路径：{filePath}，预测结果：{pred_class}，置信度：{pred_conf:.2f}%")
+            else:
+                print("测试图片不存在，请检查路径！")
+    except Exception as e:
+        print(f"图像分类测试出错: {e}")
 
 if __name__ == "__main__":
 
