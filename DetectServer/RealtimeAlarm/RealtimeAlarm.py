@@ -22,7 +22,8 @@ from PIL import Image, ImageDraw
 import io
 
 import socket  # 下发机器人通知使用
-from hk.getimgfromDVRBySDK_new import * #
+from hk.getimgfromDVRBySDK import * #
+import struct
 
 set_upload_path = 'images'
 set_result_path = 'images'
@@ -4421,6 +4422,7 @@ def UpdateOverhaulAreaRooms():
 #   optipaddr: 机器人的IP地址
 #   yiqiid:  发送的命令，可以是字符串或集合类型
 def _sendOptInfoToDev(optipaddr,  yiqiid, port=8082, timeout=180):
+    values = None
     """
     通过TCP发送命令并根据响应或超时判断结果
 
@@ -4459,12 +4461,40 @@ def _sendOptInfoToDev(optipaddr,  yiqiid, port=8082, timeout=180):
             try:
                 # 接收响应
                 # 如果响应里面有数据，处理接收数据部份
-                response = s.recv(1024).decode().strip()
-                print(f"收到响应: {response}")
+                response = s.recv(1024)
+                if response:
+                    print(f"收到 {len(response)} 字节数据")
+                    print(f"Hex: {response.hex()}")
+                    print(f"ASCII: {repr(response)}")
 
+                result = chr(response[0])
                 # 根据响应内容判断结果
-                if response == "1":
-                    return 0, "操作成功"
+                if result == "1":
+                    ##################################################
+                    # 如果有足够数据，尝试解析位置
+                    if len(response) >= 9:
+                        print(f"\n位置数据 (字节1-8):")
+                        print(f"  Raw: {response[1:9].hex()}")
+                        # 多种格式尝试
+                        formats = [
+                            ('<ii', 'int32小端')
+                        ]
+                        for fmt, desc in formats:
+                            try:
+                                if struct.calcsize(fmt) == 8:
+                                    values = struct.unpack(fmt, response[1:9])
+                                    print(f"  {desc}: {values}")
+                                    # 将valuse 转换城下面接口需要的格式,注意第一个是Y，第二个是X
+                                    values = [{'pos_y': hex(values[0]), 'pos_x': hex(values[1])}]
+                                    values = _robot_point_position_value_convert(values)
+                                    # 再将values转换成前端需要的格式,不需要字典，只返回两个数值即可
+                                    values = [values[0]['pos_x'], values[0]['pos_y']]
+                                    print(f"  再将格式转换后: {values}")
+                                    break
+                            except:
+                                pass
+                    ##############################################
+                    return 0, "操作成功", values
                 else:  # 包括"0"和其他情况
                     return 4, "机器人服务响应内容错误"
             except socket.timeout:
@@ -4645,12 +4675,17 @@ def _command_input_parese_print(opt_cmd, opt_pos):
     }
 
     # 参数校验
-    if opt_cmd is None or opt_cmd == '' or opt_pos is None or opt_pos == '':
-        print("opt_cmd/opt_pos is None or empty")
+    if opt_cmd is None or opt_cmd == '':
+        print("opt_cmd is None or empty")
         return -1
 
+    if '8' != opt_cmd and (None == opt_pos or opt_pos == ''):
+        print("opt_pos is None or empty")
+        return -1
+
+    if None != opt_pos:
+        opt_pos_int = int(opt_pos)
     opt_cmd_int = int(opt_cmd)
-    opt_pos_int = int(opt_pos)
 
     if opt_cmd_int in opt_cmd_print_info:
         if opt_cmd_int in [7]:  # 预置点命令
@@ -4736,6 +4771,7 @@ def RobotControl_command():
         'opt_param': opt_param
     }
     err_msg=[]
+    outdata = None
 
     command_json = json.dumps(command_dic)
     print("Sending robot move command:", command_json)
@@ -4765,12 +4801,14 @@ def RobotControl_command():
 
     # 拼接发送命令字符串
     str_cmd = str(opt_cmd) + ' ' + str(opt_param)
-    req.code, req.msg = _sendOptInfoToDev(robot_ip, str_cmd, robot_port)
+    req.code, req.msg, outdata = _sendOptInfoToDev(robot_ip, str_cmd, robot_port)
 
     # 确认预置点位在列表中的使能状态
     if 7 == int(opt_cmd):
         req.code, req.msg = _set_enbale_status_by_presetID(robot_id, opt_param)
 
+    if outdata is not None:
+        req.data = outdata
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
