@@ -19,3 +19,7 @@ MD5_SALT = "detectalarmsystem"
 
 # CROPPED IMAGES
 CROPPED_IMAGES_PATH = "./runs/cropped_images"
+# MODEL PATH
+
+# CAPTURE_WITH_EXE_PATH
+CAPTURE_WITH_EXE_PATH = r"D:\x64\DetectAndDownload.exe"

@@ -15,6 +15,7 @@ import traceback
 from ctypes import *
 from typing import Tuple, Optional
 import weakref
+from DetectServer.config.setting import CAPTURE_WITH_EXE_PATH
 
 # 配置日志
 logging.basicConfig(
@@ -424,7 +425,7 @@ class HikvisionCapture:
 
     # 使用外部EXE抓图，实时获取输出，只为提高像素
     def capture_with_exe(self, nvrip, nvrport, username, password, channel, output_file):
-        exe_path = r"D:\x64\DetectAndDownload.exe"
+        exe_path = CAPTURE_WITH_EXE_PATH
         params = [nvrip, str(nvrport), username, password, str(channel), output_file]
 
         cmd = [exe_path] + params
@@ -556,6 +557,7 @@ class HikvisionCapture:
             for i in range(5):
                 ret_code = self.capture_with_exe(nvrip, nvrport, username, password, channel, output_file)
                 if ret_code == 0:
+                    logger.info(f"抓图成功, 正常退出 ({i+1}/5)")
                     return True
                 else:
                     logger.warning(f"抓图失败，正在重试... ({i+1}/5)")

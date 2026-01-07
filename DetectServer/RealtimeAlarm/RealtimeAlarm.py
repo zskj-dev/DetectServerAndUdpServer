@@ -4833,7 +4833,7 @@ def CameraControl_command():
     camera_id   = request.form.get("camera_id")
     dvr_id      = request.form.get("dvr_id")
     opt_cmd     = request.form.get("opt_cmd")
-    opt_para    = request.form.get("opt_para")
+    opt_para    = request.form.get("opt_param")
 
     if opt_cmd == None or opt_cmd == '':
         req.code = 1
