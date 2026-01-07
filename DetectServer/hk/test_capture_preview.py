@@ -1334,6 +1334,24 @@ if __name__ == "__main__":
     ret = run_exe_realtime_output("192.168.20.30", 9001, "admin", "zskj1225", 37, "test_channel_37_03.jpg")
     print(f"\n测试3: 外部EXE返回码: {ret}")
 
+    print("测试4: 控制摄像头移动")
+    camera_control_move("192.168.20.30", 9001, "admin", "zskj1225", 37, 21, 0, 1)  # 上仰开始
+    time.sleep(2)
+    camera_control_move("192.168.20.30", 9001, "admin", "zskj1225", 37, 21, 1, 1)  # 上仰停止
+
+    camera_control_move("192.168.20.30", 9001, "admin", "zskj1225", 37, 22, 0, 1)  # 左右移动开始
+    time.sleep(2)
+    camera_control_move("192.168.20.30", 9001, "admin", "zskj1225", 37, 22, 1, 1)  # 左右移动停止
+
+    camera_control_move("192.168.20.30", 9001, "admin", "zskj1225", 37, 23, 0, 1)  # 云台左转开始
+    time.sleep(2)
+    camera_control_move("192.168.20.30", 9001, "admin", "zskj1225", 37, 23, 1, 1)  # 云台左转停止
+
+    camera_control_move("192.168.20.30", 9001, "admin", "zskj1225", 38, 24, 0, 1)  # 云台右转开始
+    time.sleep(2)
+    camera_control_move("192.168.20.30", 9001, "admin", "zskj1225", 38, 24, 1, 1)  # 云台右转停止
+    print("摄像头移动测试完成")
+
     # 测试3: 实时预览（需要GUI环境）
     # print("\n测试3: 实时预览")
     # realtime_preview_demo(

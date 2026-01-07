@@ -4824,6 +4824,95 @@ def _get_value_from_request(value, type_needed):
         return value
 
 
+# 30.3 发送摄像头移动指令
+@realtimealarm.route('/Camera_control', methods=["post"])
+def CameraControl_command():
+    dvr_table_name = 'm_dvr'
+    camera_table_name = 'm_camera'
+    req = ReqResult()
+    camera_id   = request.form.get("camera_id")
+    dvr_id      = request.form.get("dvr_id")
+    opt_cmd     = request.form.get("opt_cmd")
+    opt_para    = request.form.get("opt_para")
+
+    if opt_cmd == None or opt_cmd == '':
+        req.code = 1
+        req.msg = "opt_cmd is required"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    else:
+        opt_cmd = int(opt_cmd)
+
+    if opt_para == None or opt_para == '':
+        req.code = 1
+        req.msg = "opt_para is required"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    else:
+        opt_para = int(opt_para)
+
+    if camera_id == None or camera_id == '':
+        camera_id = 28  # 默认值:首钢的会展中心摄像头ID
+    if dvr_id == None or dvr_id == '':
+        dvr_id = 28     # 默认值:首钢的会展中心DVR ID
+
+    print("rcv camera_id:{}, dvr_id:{}, opt_cmd:{}".format(camera_id, dvr_id, opt_cmd))
+
+    # 根据DRV ID获取对应的DVR设备信息
+    sql = "SELECT * FROM {} WHERE dvr_id = {}".format(dvr_table_name, dvr_id)
+    iitem = db.select_db(sql)
+    if not iitem:
+        req.code = 2
+        req.msg = "No DVR found in database:" + dvr_table_name + " with ID:" + str(dvr_id)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    dvr_ip    = iitem[0]["ip"]
+    dvr_port  = iitem[0]["port"]
+    dvr_user  = iitem[0]["user"]
+    dvr_pwd   = iitem[0]["pwd"]
+
+    # 从camera_id获取对应的通道号
+    sql = "SELECT * FROM {} WHERE camera_id = {}".format(camera_table_name, camera_id)
+    iitem = db.select_db(sql)
+    if not iitem:
+        req.code = 3
+        req.msg = "No camera found in database:" + camera_table_name + " with ID:" + str(camera_id)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+    channel = iitem[0]["channel"]
+    print("Found camera channel:", channel)
+
+    # 根据OPT_CMD判断是控制摄像头移动还是调用点位
+    if opt_cmd in [1, 2, 3, 4]:  # 普通移动命令
+        if opt_para != 0 and opt_para != 1:
+            req.code = 4
+            req.msg = "invalid  opt_para " + str(opt_para)
+            return json.dumps(req.__dict__, ensure_ascii=False)
+
+        print("Calling camera move command:", opt_cmd, " with param:", opt_para)
+        # opt_cmd需要加上20才能适配下层接口
+        move_result = camera_control_move(dvr_ip, dvr_port, dvr_user, dvr_pwd, channel, opt_cmd + 20, opt_para)
+        if not move_result:
+            req.code = 5
+            req.msg = "move failed. "
+            return json.dumps(req.__dict__, ensure_ascii=False)
+
+    elif opt_cmd == 5:  # 预置点命令
+        if opt_para == 0:
+            req.code = 4
+            req.msg = "invalid  opt_para " + str(opt_para)
+            return json.dumps(req.__dict__, ensure_ascii=False)
+        print("Calling preset point ID:", opt_para)
+        preset_result, err_msg = camera_control_preset(dvr_ip, dvr_port, dvr_user, dvr_pwd, channel, 39, opt_para)
+        if 0 != preset_result:
+            req.code = 5
+            req.msg = "call preset failed. " + err_msg
+            return json.dumps(req.__dict__, ensure_ascii=False)
+    else:
+        req.code = 6
+        req.msg = "opt_cmd is invalid, opt_cmd:" + str(opt_cmd)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    req.code = 0
+    req.msg = "success"
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 
 '''
