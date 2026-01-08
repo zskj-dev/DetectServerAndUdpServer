@@ -15,7 +15,7 @@ import traceback
 from ctypes import *
 from typing import Tuple, Optional
 import weakref
-from DetectServer.config.setting import CAPTURE_WITH_EXE_PATH
+from config.setting import CAPTURE_WITH_EXE_PATH
 
 # 配置日志
 logging.basicConfig(

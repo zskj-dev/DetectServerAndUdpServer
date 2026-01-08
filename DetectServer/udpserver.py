@@ -395,7 +395,7 @@ def PlanSubItemAction(iitem, mgcode):
                     
                     croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
                     if croppedCnt <= 0:
-                        print("[Warnning]No Cropped images detect needed, stop detected.")
+                        print("[Warnning]No Cropped images detect needed, stop detected for ctlopt=1.")
                         return 
                     else:
                         try:
@@ -404,19 +404,18 @@ def PlanSubItemAction(iitem, mgcode):
                                                                             systemsetting["curerrlevel"])
                             # 检测图片并返回检测类型、检测state
                             print(imgfilenameonly, systemsetting)
-                            print("NVRInfo", NVRInfo)
-                            for filePath in filesInfo["filepath"]:
-                                detectImage_sigleresult = DetectImage(filePath, systemsetting)
+                            for filePath in filesInfo:
+                                detectImage_sigleresult = DetectCroppedImage(filePath["filepath"], systemsetting)
 
                                 stat1 = detectImage_sigleresult.get("state")
                                 # print("stat1:", stat1)
                                 errortype1 = detectImage_sigleresult.get("errortype")
                                 # print("errortype1:", errortype1)
-                                errorimg1 = os.path.basename(imgfilenameonly)
+                                errorimg1 = os.path.basename(filePath["filepath"])
                                 # print("errorimg1:", errorimg1)
                                 InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
                         except Exception as e:
-                            print(f"[ctlopt = 1]Meter image detect error:{e}, filePath:{filePath}")
+                            print(f"[ctlopt = 1]Meter image detect error:{e}")
 
         else:
             # 3、其他情况（没有检修区域，没有可控制状态   直接检测or表计任务）
@@ -472,7 +471,7 @@ def PlanSubItemAction(iitem, mgcode):
                     _UpdateSubPlanMeterInfoImageNameByPlanInfoID(iitem["id"], imgfilenameonly)
                     croppedCnt, filesInfo = apiImageCropped(iitem["id"], imgid, watchpoint, imgfilenameonly)
                     if croppedCnt <= 0:
-                        print("[Warnning]No Cropped images detect needed, stop detected.")
+                        print("[Warnning]No Cropped images detect needed, stop detected for ctlopt=0.")
                         return 
                     else:
                         try:
@@ -480,20 +479,18 @@ def PlanSubItemAction(iitem, mgcode):
                             systemsetting["info"] = getModelFileTypeErrLevel(systemsetting["fileid"],
                                                                             systemsetting["curerrlevel"])
                             # 检测图片并返回检测类型、检测state
-                            print(imgfilenameonly, systemsetting)
-                            print("NVRInfo", NVRInfo)
-                            for filePath in filesInfo["filepath"]:
-                                detectImage_sigleresult = DetectImage(filePath, systemsetting)
+                            for filePath in filesInfo:
+                                detectImage_sigleresult = DetectCroppedImage(filePath["filepath"], systemsetting)
 
                                 stat1 = detectImage_sigleresult.get("state")
                                 # print("stat1:", stat1)
                                 errortype1 = detectImage_sigleresult.get("errortype")
                                 # print("errortype1:", errortype1)
-                                errorimg1 = os.path.basename(imgfilenameonly)
+                                errorimg1 = os.path.basename(filePath["filepath"])
                                 # print("errorimg1:", errorimg1)
                                 InsertErrorSigleImage(NVRInfo, errorimg1, errortype1, stat1)
                         except Exception as e:
-                            print(f"[ctlopt=0]Meter image detect error:{e}, filePath:{filePath}")
+                            print(f"[ctlopt=0]Meter image detect error:{e}")
 
     # #需要控制
     # if int(iitem["ctlopt"]) == 1:

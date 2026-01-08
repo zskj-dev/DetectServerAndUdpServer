@@ -13,7 +13,7 @@ BATCH_SIZE = 32  # 批次大小（根据GPU显存调整）
 EPOCHS = 20  # 训练轮数
 LEARNING_RATE = 1e-3  # 学习率
 IMG_SIZE = (224, 224)  # 图片统一尺寸
-MODEL_SAVE_PATH = "./image_classifier.pth"  # 模型保存路径
+MODEL_SAVE_PATH = r"./image_classifier.pth"  # 模型保存路径
 # 归一化参数（与ImageNet一致，也可自定义）
 NORMALIZE_MEAN = [0.485, 0.456, 0.406]
 NORMALIZE_STD = [0.229, 0.224, 0.225]
@@ -106,7 +106,10 @@ def predict_image(image_path, class_names):
     return predicted_class, confidence
 
 # 参照udpserver.py中DetectImage函数的调用方式
-def DetectImage(image_path, systemsetting):
+# ====================== 5. 图像分类预测函数 ======================
+def DetectCroppedImage(image_path, systemsetting):
+    pred_class  = None,
+    pred_conf   = None
     """
     使用图像分类模型对输入图像进行分类预测
     参数:
@@ -120,29 +123,30 @@ def DetectImage(image_path, systemsetting):
         "state":""
     }
 
-    class_names = systemsetting.get("class_names", [])
-    if not class_names:
-        print("ERROR: 系统设置中缺少'class_names'配置")
-        return {"state": -1, "errortype": "配置错误"}
-
+    # # class_names = systemsetting.get("class_names", [])
+    # if not class_names:
+    #     print("ERROR: 系统设置中缺少'class_names'配置")
+    #     return {"state": -1, "errortype": "配置错误"}
+    class_names = ['kaiguan1_guan', 'kaiguan1_kai', 'led_green_close', 'led_green_open', 'led_red_close',
+                   'led_red_open']
     pred_class, pred_conf = predict_image(image_path, class_names)
     if pred_class is None:
         return {"state": -1, "errortype": "模型加载失败"}
-
+    else:
+        print(f"预测结果：{pred_class}，置信度：{pred_conf:.2f}%")
 
     if pred_conf < 80.0:  # 置信度阈值80%
         detectImage_result["state"] = 1 # 低置信度
         detectImage_result["errortype"] = "低置信度"
     else:
         detectImage_result["state"] = 3 # 预测成功
-        detectImage_result["errortype"] = pred_class
+        if pred_class in class_names:
+            result = class_names.index(pred_class) + 1
+        else:
+            result = 99
+        detectImage_result["errortype"] = result
 
-    return {
-        "state": 0,
-        "errortype": None,
-        "predicted_class": pred_class,
-        "confidence": pred_conf
-    }
+    return detectImage_result
 
 # ====================== 6. 主函数 ======================
 if __name__ == "__main__":
