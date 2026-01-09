@@ -260,6 +260,20 @@ def _UpdateSubPlanMeterInfoImageNameByPlanInfoID(planinfoid, meterimgname):
         print("Failed:update {} image:{}".format(table_name, e))
         return 1
 
+# 根据摄像头点位ID获取对应机器人点位信息
+def _getRobotPointByCameraWatchpoint(camid):
+    if camid is None or camid == '':
+        print("[Error]Invalid camid:", camid)
+        return None
+    table_name_m_camera_point = 'm_camera_point'
+    sqlstr = "select robot_point_id from {} where preset_id={}".format(table_name_m_camera_point, camid)
+    totaldata = db.select_db(sqlstr)
+    if totaldata is not None and len(totaldata) > 0:
+        print("Get robot point id:", totaldata[0]['robot_point_id'], " with camid:", camid)
+        return totaldata[0]['robot_point_id']
+    else:
+        print("[Error]No robot point id found with camid:", camid)
+    return None
 
 def PlanSubItemAction(iitem, mgcode):
     if iitem["id"] is None:
@@ -329,9 +343,19 @@ def PlanSubItemAction(iitem, mgcode):
                                         ))
         #2、是否需要控制
         if int(iitem["ctlopt"]) == 1:
+            robot_ponit_id = _getRobotPointByCameraWatchpoint(watchpoint)
+            if robot_ponit_id is None:
+                print("[Error]No robot point id found, cannot send opt info to robot.")
+                status_data["OptJiQiRen"] = "No robot point id found, cannot send opt info to robot."
+                errid = 10003
+                resultstr = 1
+                errstr = json.dumps(status_data, ensure_ascii=False)
+                UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
+                return
+
             print("start send opt msg:", iitem["ctlopt"])
 
-            cmd_list = str('7') + ' ' + str(iitem["yiqiid"])
+            cmd_list = str('7') + ' ' + str(robot_ponit_id)
             isok = sendOptInfoToDev(iitem["optipaddr"], cmd_list)
             print("send opt over msg:", isok)
             if isok == False:
