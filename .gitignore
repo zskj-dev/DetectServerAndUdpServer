@@ -303,4 +303,4 @@ $RECYCLE.BIN/
 *.pt
 *.pth
 
-# End of https://www.toptal.com/developers/gitignore/api/c,c++,bazel,cmake,linux,macos,windows,jetbrains+all,visualstudiocode
+# End of https://www.toptal.com/developers/gitignore/api/c,c++,bazel,cmake,linux,macos,windows,jetbrains+all,visualstudiocode*.pth
