@@ -153,7 +153,7 @@ def getMeterImageFromCameraCapture(camid, watchpoint, image_path, image_data = N
         "failed_count": match_cnt - len(cropped_images)
     }
 
-def save_cropped_images(result_dict, save_dir="cropped_images"):
+def save_cropped_images(result_dict, camid, watchpoint, save_dir="cropped_images"):
     """
     保存裁剪后的图像到本地
     
@@ -171,7 +171,7 @@ def save_cropped_images(result_dict, save_dir="cropped_images"):
     saved_files = []
     
     for img_info in result_dict['images']:
-        filename = f"meter_{timestamp}_{img_info['index']}.jpg"
+        filename = f"meter_cam{camid}_wp{watchpoint}_{timestamp}_{img_info['index']}.jpg"
         filepath = os.path.join(save_dir, filename)
         
         with open(filepath, 'wb') as f:
@@ -241,7 +241,7 @@ def apiImageCropped(planinfoid,camid, watchpoint, image_path):
     print(f"找到 {result['count']} 个表记区域")
     
     # 保存裁剪的图像
-    saved_files = save_cropped_images(result, CROPPED_IMAGES_PATH)
+    saved_files = save_cropped_images(result, camid, watchpoint, CROPPED_IMAGES_PATH)
     print("saved_files:", saved_files)
 
     return result['count'], saved_files
