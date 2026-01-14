@@ -2209,7 +2209,7 @@ def AddVisitationPlan():
     db.insertData(TableName, insert_dic)
     req1 = ReqResult()
     req1.code = 0
-    req1.msg = "success"
+    req1.msg = "success: new id={}".format(id)
 
     return json.dumps(req1.__dict__, ensure_ascii=False)
 
@@ -4913,6 +4913,36 @@ def CameraControl_command():
     req.code = 0
     req.msg = "success"
     return json.dumps(req.__dict__, ensure_ascii=False)
+
+'''
+    30.4 获取机器人状态信息
+            0:空闲
+            1:正在巡检
+            2:故障
+'''
+@realtimealarm.route('/Robot_status', methods=["post"])
+def GetRobotStatusByID():
+    table_name = 'm_robot'
+    req = ReqResult()
+    robot_id = request.form.get("id")
+
+    if robot_id == None or robot_id == '':
+        req.code = 1
+        req.msg = "robot_id is required"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    sql = "SELECT sts FROM {} WHERE id = {}".format(table_name, robot_id)
+    iitem = db.select_db(sql)
+    if len(iitem) <= 0:
+        req.code = 2
+        req.msg = "No robot found in database:" + table_name + " with ID:" + str(robot_id)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    req.data = iitem[0]['sts']
+    req.code = 0
+    req.msg = "success"
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
 
 
 '''
