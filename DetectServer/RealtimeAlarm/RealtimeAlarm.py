@@ -4944,6 +4944,60 @@ def GetRobotStatusByID():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 
+'''
+    30.6 获取机柜列表
+'''
+@realtimealarm.route('/cabinetList', methods=["post"])
+def GetCabinetList():
+    table_name = 'm_camera_point'
+    req = ReqResult()
+
+    sqltotal = "select point_id as cabinetId, point_info as cabinetName from {}".format(table_name)
+    totaldata = db.select_db(sqltotal)
+    if len(totaldata) <= 0 or totaldata is None:
+        req.code = 1
+        req.msg = "未设置机柜信息"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+
+    print("GetCabinetList:", totaldata)
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = totaldata
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+'''
+    30.7 获取巡检点列表
+'''
+@realtimealarm.route('/unintList', methods=["post"])
+def GetUnintList():
+    table_name_metername_point = 'm_metername_point'
+    table_name_camera_point = 'm_camera_point'
+    req = ReqResult()
+
+    try:
+        sqltotal = "SELECT  \
+                        t2.preset_id as cabinetId,  \
+                        t2.point_info as cabinetName, \
+                        t1.id as unitId,         \
+                        t1.name as unitName       \
+                    FROM {} t1                      \
+                    LEFT JOIN {} t2 ON t1.watchpoint = t2.preset_id".format(table_name_metername_point, table_name_camera_point)
+        totaldata = db.select_db(sqltotal)
+        if len(totaldata) <= 0 or totaldata is None:
+            req.code = 1
+            req.msg = "未找到巡检点信息"
+            return json.dumps(req.__dict__, ensure_ascii=False)
+
+        print("GetUnintList:", totaldata)
+        req.code = 0
+        req.msg = "读取成功"
+        req.data = totaldata
+    except Exception as e:
+        req.code = 2
+        req.msg = "数据库操作异常:{}".format(e)
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
 
 '''
    31.1 新增一条表计的点位信息
