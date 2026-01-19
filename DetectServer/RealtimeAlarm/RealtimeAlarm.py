@@ -24,6 +24,7 @@ import io
 import socket  # 下发机器人通知使用
 from hk.getimgfromDVRBySDK import * #
 import struct
+from common.imageCropped import apiGetRobotStatus   #获取机器人状态使用
 
 set_upload_path = 'images'
 set_result_path = 'images'
@@ -4931,14 +4932,13 @@ def GetRobotStatusByID():
         req.msg = "robot_id is required"
         return json.dumps(req.__dict__, ensure_ascii=False)
 
-    sql = "SELECT sts FROM {} WHERE id = {}".format(table_name, robot_id)
-    iitem = db.select_db(sql)
-    if len(iitem) <= 0:
+    robot_status = apiGetRobotStatus(robot_id)
+    if robot_status is None:
         req.code = 2
-        req.msg = "No robot found in database:" + table_name + " with ID:" + str(robot_id)
+        req.msg = "Failed to get robot status"
         return json.dumps(req.__dict__, ensure_ascii=False)
 
-    req.data = iitem[0]['sts']
+    req.data = robot_status
     req.code = 0
     req.msg = "success"
     return json.dumps(req.__dict__, ensure_ascii=False)

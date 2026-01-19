@@ -246,6 +246,49 @@ def apiImageCropped(planinfoid,camid, watchpoint, image_path):
 
     return result['count'], saved_files
 
+def apiGetRobotStatus(robot_id):
+    """
+    返回机器人状态
+    """
+    table_name_robot= "m_robot"
+    sqlstr = "SELECT sts FROM {} WHERE id = {}".format(table_name_robot, robot_id)
+    try:
+        select_result = db.select_db(sqlstr)
+        if not select_result or len(select_result) <= 0:
+            print(f"[Error]Not found for robot_id:{robot_id} in {table_name_robot}")
+            return None
+        robot_status = select_result[0]['sts']
+    except Exception as e:
+        print("Failed to get robot status:{}".format(e))
+        return None
+    return robot_status
+
+# 对外提供的API接口
+# 设置机器人状态
+# 参数：
+#       robot_id        机器人ID
+#       robot_status    机器人状态:0-空闲，1-工作中，2-故障
+def apiSetRobotStatus(robot_id = 1, robot_status = 0):
+    """
+    返回机器人状态
+    """
+    table_name_robot= "m_robot"
+
+    try:
+        up_dic = {
+            'sts': robot_status,
+        }
+        # 下面语句要用双引号,单引号报错
+        wheresql = "id={};".format(robot_id)
+
+        db.updateData(table_name_robot, up_dic, wheresql)
+        print("apiSetRobotStatus success[sts:{}].".format(robot_status))
+        return 0
+    except Exception as e:
+        print("Failed:update {} image:{}".format(table_name_robot, e))
+        return 2
+
+
 # 使用示例
 def example_usage():
     """

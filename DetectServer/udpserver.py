@@ -356,9 +356,11 @@ def PlanSubItemAction(iitem, mgcode):
             print("start send opt msg:", iitem["ctlopt"])
 
             cmd_list = str('7') + ' ' + str(robot_ponit_id)
+            apiSetRobotStatus(1)
             isok = sendOptInfoToDev(iitem["optipaddr"], cmd_list)
             print("send opt over msg:", isok)
             if isok == False:
+                apiSetRobotStatus(2)
                 status_data["OptJiQiRen"] = "send command info to JiQiRen failed!"
                 errid = 10002
                 resultstr = 1
@@ -381,6 +383,7 @@ def PlanSubItemAction(iitem, mgcode):
             else:
                 status_data["DownLoadImage"] = "Download Image Successed!"
             resultstr = 3
+            apiSetRobotStatus(0)
             errstr = json.dumps(status_data, ensure_ascii=False)
             UpdateSubPlanCheckResultByHisid(hisid, errstr, errid, errtype, resultstr)
             # 判断在可控制情况下是否表计检测：
