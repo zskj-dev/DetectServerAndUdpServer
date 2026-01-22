@@ -3,7 +3,7 @@ import re
 from flask import Blueprint, render_template, redirect, request, current_app, send_file
 from flask import Flask, render_template, request, jsonify, make_response
 from common.mysqloptor import db
-from common.reqresult import ReqResult
+from common.reqresult import ReqResult,CurrentProcessStatus
 from werkzeug.utils import secure_filename
 import xlwt
 import json
@@ -4939,6 +4939,64 @@ def GetRobotStatusByID():
         return json.dumps(req.__dict__, ensure_ascii=False)
 
     req.data = robot_status
+    req.code = 0
+    req.msg = "success"
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+# CurrentProcessStatus
+'''
+    30.5 当前计划的执行情况
+'''
+@realtimealarm.route('/scheduleStatus', methods=["post"])
+def GetScheduleStatus():
+    talbe_name_visitationplan = 'm_visitationplan'
+    req = ReqResult()
+
+    req_scheduleStatus = CurrentProcessStatus()
+    if req_scheduleStatus is None:
+        req.code = 1
+        req.msg = "Failed to get schedule status"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    sql_total = "select id from {}".format(talbe_name_visitationplan)
+    total_data = db.select_db(sql_total)
+    if len(total_data) <= 0 or total_data is None:
+        req.code = 2
+        req.msg = "未设置巡检计划"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    for index in range(len(total_data)):
+        id = total_data[index]["id"]
+        sql_get_result = "SELECT \
+            t1.id, \
+            t1.planid as jobId, \
+            t1.planinfoid,   \
+            ca_p.point_info as cabinetName, \
+            t2.name as unitName,    \
+            t1.value_int,   \
+            t1.value_str as unitResult, \
+            t2.watchpoint   \
+        FROM m_visitationplaninfo_meter_2 t1    \
+        LEFT JOIN m_metername_point t2 ON t1.metername_id = t2.id   \
+        LEFT JOIN m_camera_point ca_p ON t2.watchpoint = ca_p.point_id \
+        WHERE t1.planid = {};".format(id)
+
+        sql_get_result_result = db.select_db(sql_get_result)
+        if len(sql_get_result_result) <= 0 or sql_get_result_result is None:    
+            req.code = 3
+            req.msg = "未设置巡检计划点位信息111"
+            return json.dumps(req.__dict__, ensure_ascii=False)
+
+        status = CurrentProcessStatus(jobId=id)
+        status.add_inspection_result(
+            sql_get_result_result[0].get('cabinetName'),
+            sql_get_result_result[0].get('unitName'),
+            sql_get_result_result[0].get('unitResult'),
+            1
+        )
+        
+
+    req.data = status.to_json()
     req.code = 0
     req.msg = "success"
     return json.dumps(req.__dict__, ensure_ascii=False)
