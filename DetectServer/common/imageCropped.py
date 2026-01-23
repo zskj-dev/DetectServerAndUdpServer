@@ -288,6 +288,107 @@ def apiSetRobotStatus(robot_id = 1, robot_status = 0):
         print("Failed:update {} image:{}".format(table_name_robot, e))
         return 2
 
+def apiSetMeterCheckStatus(meter_id, status):
+    """
+    设置表计巡检状态,表计表格m_visitationplaninfo_meter_2中的status字段
+    参数：
+        meter_id: 表计ID
+        status: 状态值: 巡检状态：0：无效，1：成功，2：失败，3：进行中
+    """
+    table_name = "m_visitationplaninfo_meter_2"
+    if not db.checkIdExist(table_name, meter_id, "planinfoid"):
+        print(f"Not found id: {meter_id} in {table_name}")
+        return 1
+    try:
+        up_dic = {
+            'status': status,
+        }
+        # 下面语句要用双引号,单引号报错
+        wheresql = "id={};".format(meter_id)
+
+        db.updateData(table_name, up_dic, wheresql)
+        print("apiSetMeterCheckStatus success[status:{}].".format(status))
+        return 0
+    except Exception as e:
+        print("Failed:update {} status:{}".format(table_name, e))
+        return 2
+
+def apiGetMeterCheckStatus(meter_id):
+    """
+    获取表计巡检状态,表计表格m_visitationplaninfo_meter_2中的status字段
+    参数：
+        meter_id: 表计ID
+    返回:
+        status_dict: 状态描述
+            0: "待检",
+            1: "已检查",
+            2: "检测中",
+            3: "未知状态",
+    """
+    status_dict = {
+        0: "待检",
+        1: "已检查",
+        2: "检测中",
+        3: "未知状态"
+    }
+    table_name = "m_visitationplaninfo_meter_2"
+    sqlstr = "SELECT status FROM {} WHERE id = {}".format(table_name, meter_id)
+    try:
+        select_result = db.select_db(sqlstr)
+        if not select_result or len(select_result) <= 0:
+            print(f"[Error]Not found for meter_id:{meter_id} in {table_name}")
+            return status_dict[3]
+        status = select_result[0]['status']
+    except Exception as e:
+        print("Failed to get meter status:{}".format(e))
+        return status_dict[3]
+    return status_dict[status]
+
+def apiSetMeterIsDone(meter_id, isdone):
+    """
+        设置表计巡检状态,表计表格m_visitationplaninfo_meter_2中的status字段
+        参数：
+            meter_id: 表计ID
+            isdone: 是否完成巡检: 0-未巡检，1-已巡检
+        """
+    table_name = "m_visitationplaninfo_meter_2"
+    if not db.checkIdExist(table_name, meter_id, "planinfoid"):
+        print(f"Not found id: {meter_id} in {table_name}")
+        return 1
+    try:
+        up_dic = {
+            'isdone': isdone,
+        }
+        # 下面语句要用双引号,单引号报错
+        wheresql = "id={};".format(meter_id)
+
+        db.updateData(table_name, up_dic, wheresql)
+        print("apiSetMeterCheckStatus success[status:{}].".format(isdone))
+        return 0
+    except Exception as e:
+        print("Failed:update {} status:{}".format(table_name, e))
+        return 2
+
+def apiGetMeterDoneCount(planid):
+    """
+    获取某个巡视任务子项下已完成巡检的表计数量
+    参数：
+        planinfoid: 巡视任务ID
+    返回:
+        int: 已完成巡检的表计数量
+    """
+    table_name = "m_visitationplaninfo_meter_2"
+    sqlstr = "SELECT COUNT(*) AS done_count FROM {} WHERE planid = {} AND isDone = 1".format(table_name, planid)
+    try:
+        select_result = db.select_db(sqlstr)
+        if not select_result or len(select_result) <= 0:
+            print(f"[Error]Not found for planid:{planid} in {table_name}")
+            return 0
+        done_count = select_result[0]['done_count']
+    except Exception as e:
+        print("Failed to get done count:{}".format(e))
+        return 0
+    return done_count
 
 # 使用示例
 def example_usage():

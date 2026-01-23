@@ -24,7 +24,7 @@ import io
 import socket  # 下发机器人通知使用
 from hk.getimgfromDVRBySDK import * #
 import struct
-from common.imageCropped import apiGetRobotStatus   #获取机器人状态使用
+from common.imageCropped import *   #获取机器人状态使用
 
 set_upload_path = 'images'
 set_result_path = 'images'
@@ -4951,6 +4951,7 @@ def GetRobotStatusByID():
 def GetScheduleStatus():
     talbe_name_visitationplan = 'm_visitationplan'
     req = ReqResult()
+    totol_count = 0
 
     req_scheduleStatus = CurrentProcessStatus()
     if req_scheduleStatus is None:
@@ -4982,21 +4983,24 @@ def GetScheduleStatus():
         WHERE t1.planid = {};".format(id)
 
         sql_get_result_result = db.select_db(sql_get_result)
-        if len(sql_get_result_result) <= 0 or sql_get_result_result is None:    
-            req.code = 3
-            req.msg = "未设置巡检计划点位信息111"
-            return json.dumps(req.__dict__, ensure_ascii=False)
+        if len(sql_get_result_result) <= 0 or sql_get_result_result is None:
+            print("[Warning] No inspection points found for plan ID:{}, continue".format(id))
+            continue
 
         status = CurrentProcessStatus(jobId=id)
-        status.add_inspection_result(
-            sql_get_result_result[0].get('cabinetName'),
-            sql_get_result_result[0].get('unitName'),
-            sql_get_result_result[0].get('unitResult'),
-            1
-        )
-        
+        for index2 in range(len(sql_get_result_result)):
+            status.add_inspection_result(
+                sql_get_result_result[index2].get('cabinetName'),
+                sql_get_result_result[index2].get('unitName'),
+                sql_get_result_result[index2].get('unitResult'),
+                apiGetMeterCheckStatus(sql_get_result_result[index2].get('id'))
+            )
+            totol_count += 1
+        # 获取当前计划的已完成的检测表计数量
+        chek_done_count = apiGetMeterDoneCount(id)
+        status.update_progress(chek_done_count, totol_count)
 
-    req.data = status.to_json()
+    req.data = status.to_dict()
     req.code = 0
     req.msg = "success"
     return json.dumps(req.__dict__, ensure_ascii=False)
