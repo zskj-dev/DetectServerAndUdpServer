@@ -94,37 +94,222 @@ class CurrentProcessStatus:
         return json.dumps(self.to_dict(), ensure_ascii=False)
 
 
+from dataclasses import dataclass, field
+from typing import List, Optional
+from datetime import datetime
+
+
+@dataclass
+class UnitResult:
+    """巡检点结果详情"""
+    unitName: str  # 巡检点名称
+    unitId: str  # 巡检点Id
+    unitType: str  # 巡检点类型
+    cabinetId: str  # 机柜Id
+    cabinetName: str  # 机柜名称
+    unitResult: str  # 巡检结果数据
+    unitThreshold: str  # 巡检点阈值
+    unitStatus: str  # 巡检点状态
+    unitPhoto: str  # 巡检点图片
+    unitTime: str  # 巡检点检测时间
+
+
+@dataclass
+class InspectionReport:
+    """巡检报告数据格式"""
+    scheduleName: str  # 计划名称
+    unitCount: str  # 巡检点总数
+    unitFinish: str  # 完成巡检点个数
+    unitWrong: str  # 异常巡检点个数
+    unitCancel: str  # 取消巡检点个数
+    startTime: str  # 任务开始时间
+    stopTime: str  # 任务结束时间
+    conclusion: List[str]  # 巡检结论
+    result: List[UnitResult]  # 巡检结果列表
+
+
 # 使用示例
+def create_sample_inspection_report():
+    """创建示例巡检报告数据"""
+
+    # 创建巡检点结果示例
+    unit_results = [
+        UnitResult(
+            unitName="温度传感器-01",
+            unitId="TEMP001",
+            unitType="温度传感器",
+            cabinetId="CAB001",
+            cabinetName="服务器机柜A",
+            unitResult="23.5°C",
+            unitThreshold="20-25°C",
+            unitStatus="正常",
+            unitPhoto="/images/cab001_temp001.jpg",
+            unitTime="2024-01-15 10:30:25"
+        ),
+        UnitResult(
+            unitName="湿度传感器-01",
+            unitId="HUM001",
+            unitType="湿度传感器",
+            cabinetId="CAB001",
+            cabinetName="服务器机柜A",
+            unitResult="45%",
+            unitThreshold="40-60%",
+            unitStatus="正常",
+            unitPhoto="/images/cab001_hum001.jpg",
+            unitTime="2024-01-15 10:31:15"
+        )
+    ]
+
+    # 创建巡检报告示例
+    report = InspectionReport(
+        scheduleName="数据中心日常巡检-20240115",
+        unitCount="50",
+        unitFinish="48",
+        unitWrong="1",
+        unitCancel="1",
+        startTime="2024-01-15 09:00:00",
+        stopTime="2024-01-15 11:30:00",
+        conclusion=["巡检完成", "发现1处异常", "1处已取消"],
+        result=unit_results
+    )
+
+    return report
+
+
+# 转换为字典的方法
+def inspection_report_to_dict(report: InspectionReport) -> dict:
+    """将InspectionReport对象转换为字典"""
+    return {
+        "scheduleName": report.scheduleName,
+        "unitCount": report.unitCount,
+        "unitFinish": report.unitFinish,
+        "unitWrong": report.unitWrong,
+        "unitCancel": report.unitCancel,
+        "startTime": report.startTime,
+        "stopTime": report.stopTime,
+        "conclusion": report.conclusion,
+        "result": [
+            {
+                "unitName": u.unitName,
+                "unitId": u.unitId,
+                "unitType": u.unitType,
+                "cabinetId": u.cabinetId,
+                "cabinetName": u.cabinetName,
+                "unitResult": u.unitResult,
+                "unitThreshold": u.unitThreshold,
+                "unitStatus": u.unitStatus,
+                "unitPhoto": u.unitPhoto,
+                "unitTime": u.unitTime
+            }
+            for u in report.result
+        ]
+    }
+
+
+# 从字典创建对象的方法
+def dict_to_inspection_report(data: dict) -> InspectionReport:
+    """将字典转换为InspectionReport对象"""
+    unit_results = [
+        UnitResult(
+            unitName=u["unitName"],
+            unitId=u["unitId"],
+            unitType=u["unitType"],
+            cabinetId=u["cabinetId"],
+            cabinetName=u["cabinetName"],
+            unitResult=u["unitResult"],
+            unitThreshold=u["unitThreshold"],
+            unitStatus=u["unitStatus"],
+            unitPhoto=u["unitPhoto"],
+            unitTime=u["unitTime"]
+        )
+        for u in data["result"]
+    ]
+
+    return InspectionReport(
+        scheduleName=data["scheduleName"],
+        unitCount=data["unitCount"],
+        unitFinish=data["unitFinish"],
+        unitWrong=data["unitWrong"],
+        unitCancel=data["unitCancel"],
+        startTime=data["startTime"],
+        stopTime=data["stopTime"],
+        conclusion=data["conclusion"],
+        result=unit_results
+    )
+
+
+# 如果需要JSON序列化，可以添加这个方法
+def to_json(report: InspectionReport) -> str:
+    """将巡检报告转换为JSON字符串"""
+    import json
+    return json.dumps(inspection_report_to_dict(report), ensure_ascii=False, indent=2)
+
+
+# 测试代码
 if __name__ == "__main__":
-    # 创建状态对象
-    status = CurrentProcessStatus(jobId="job_001")
-    
-    # 更新进度
-    status.update_progress(unitFinish=3, total_count=40)
-    
-    # 添加巡检结果
-    status.add_inspection_result(
-        cabinetName="机柜A",
-        unitName="巡检点1",
-        unitResult="温度: 25°C",
-        unitStatus="正常"
-    )
-    
-    status.add_inspection_result(
-        cabinetName="机柜A",
-        unitName="巡检点2",
-        unitResult="湿度: 60%",
-        unitStatus="正常"
-    )
-    
-    # 完成任务
-    status.set_job_status(CurrentProcessStatus.JOB_STATUS_COMPLETED)
-    status.update_progress(unitFinish=20, total_count=40)
-    
-    # 获取JSON数据
-    json_data = status.to_dict()
-    print("状态数据:", json_data)
-    
-    # 或者获取JSON字符串
-    json_str = status.to_json()
-    print("JSON字符串:", json_str)
+    # 创建示例数据
+    sample_report = create_sample_inspection_report()
+
+    # 打印对象信息
+    print("=== 巡检报告对象 ===")
+    print(f"计划名称: {sample_report.scheduleName}")
+    print(f"巡检点总数: {sample_report.unitCount}")
+    print(f"完成数: {sample_report.unitFinish}")
+    print(f"异常数: {sample_report.unitWrong}")
+    print(f"取消数: {sample_report.unitCancel}")
+    print(f"开始时间: {sample_report.startTime}")
+    print(f"结束时间: {sample_report.stopTime}")
+    print(f"结论: {sample_report.conclusion}")
+    print(f"巡检结果数量: {len(sample_report.result)}")
+
+    print("\n=== 第一个巡检点详情 ===")
+    first_result = sample_report.result[0]
+    print(f"巡检点名称: {first_result.unitName}")
+    print(f"巡检点ID: {first_result.unitId}")
+    print(f"巡检结果: {first_result.unitResult}")
+    print(f"巡检状态: {first_result.unitStatus}")
+
+    # 转换为字典
+    print("\n=== 转换为字典 ===")
+    report_dict = inspection_report_to_dict(sample_report)
+    print(report_dict)
+
+    # 转换为JSON
+    print("\n=== 转换为JSON ===")
+    print(to_json(sample_report))
+
+#
+# # 使用示例
+# if __name__ == "__main__":
+#     # 创建状态对象
+#     status = CurrentProcessStatus(jobId="job_001")
+#
+#     # 更新进度
+#     status.update_progress(unitFinish=3, total_count=40)
+#
+#     # 添加巡检结果
+#     status.add_inspection_result(
+#         cabinetName="机柜A",
+#         unitName="巡检点1",
+#         unitResult="温度: 25°C",
+#         unitStatus="正常"
+#     )
+#
+#     status.add_inspection_result(
+#         cabinetName="机柜A",
+#         unitName="巡检点2",
+#         unitResult="湿度: 60%",
+#         unitStatus="正常"
+#     )
+#
+#     # 完成任务
+#     status.set_job_status(CurrentProcessStatus.JOB_STATUS_COMPLETED)
+#     status.update_progress(unitFinish=20, total_count=40)
+#
+#     # 获取JSON数据
+#     json_data = status.to_dict()
+#     print("状态数据:", json_data)
+#
+#     # 或者获取JSON字符串
+#     json_str = status.to_json()
+#     print("JSON字符串:", json_str)

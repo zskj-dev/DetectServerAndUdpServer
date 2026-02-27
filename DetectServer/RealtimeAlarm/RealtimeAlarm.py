@@ -3,7 +3,7 @@ import re
 from flask import Blueprint, render_template, redirect, request, current_app, send_file
 from flask import Flask, render_template, request, jsonify, make_response
 from common.mysqloptor import db
-from common.reqresult import ReqResult,CurrentProcessStatus
+from common.reqresult import ReqResult,CurrentProcessStatus,create_sample_inspection_report,to_json, inspection_report_to_dict
 from werkzeug.utils import secure_filename
 import xlwt
 import json
@@ -5060,6 +5060,38 @@ def GetUnintList():
         req.msg = "数据库操作异常:{}".format(e)
     return json.dumps(req.__dict__, ensure_ascii=False)
 
+'''
+    30.8 查看巡检结果
+'''
+@realtimealarm.route('/scheduleResult', methods=["post"])
+def GetScheduleResult():
+    tabale_name_robot = "m_robot"
+    table_name_visitationplan = "m_visitationplan"
+
+    req = ReqResult()
+    robot_id = request.form.get("robotId")
+    job_id = request.form.get("jobId")
+
+    sql_check_id_exist = "SELECT id FROM {} WHERE id = {}".format(tabale_name_robot, robot_id)
+    result = db.select_db(sql_check_id_exist)
+    if len(result) <= 0 or result is None:
+        req = ReqResult()
+        req.code = 1
+        req.msg = "未找到机器人ID为:{}的信息".format(robot_id)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    sql_check_id_exist = "SELECT id FROM {} WHERE id = {}".format(table_name_visitationplan, job_id)
+    result = db.select_db(sql_check_id_exist)
+    if len(result) <= 0 or result is None:
+        req = ReqResult()
+        req.code = 2
+        req.msg = "未找到任务ID".format(robot_id)
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    req.code = 0
+    req.msg = "读取成功"
+    req.data = inspection_report_to_dict(create_sample_inspection_report())
+    return json.dumps(req.__dict__, ensure_ascii=False)
 
 '''
    31.1 新增一条表计的点位信息
