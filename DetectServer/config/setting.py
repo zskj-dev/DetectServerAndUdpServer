@@ -7,7 +7,7 @@ MYSQL_HOST = "127.0.0.1"
 MYSQL_PORT = 3306
 MYSQL_USER = "root"
 MYSQL_PWD = "123456"
-MYSQL_DB = "d_detectsys_sg"
+MYSQL_DB = "d_detectsys"
 
 #redis
 REDIS_HOST = "127.0.0.1"
@@ -22,4 +22,4 @@ CROPPED_IMAGES_PATH = "./runs/cropped_images"
 # MODEL PATH
 
 # CAPTURE_WITH_EXE_PATH
-CAPTURE_WITH_EXE_PATH = r"D:\x64\DetectAndDownload.exe"
+CAPTURE_WITH_EXE_PATH = r"D:\01_work\01_ZSXK\HC_SDK\DetectAndDownload.exe"

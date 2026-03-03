@@ -349,7 +349,7 @@ def apiSetMeterIsDone(meter_id, isdone):
         设置表计巡检状态,表计表格m_visitationplaninfo_meter_2中的status字段
         参数：
             meter_id: 表计ID
-            isdone: 是否完成巡检: 0-未巡检，1-已巡检
+            isDone: 是否完成巡检: 0-未巡检，1-已巡检
         """
     table_name = "m_visitationplaninfo_meter_2"
     if not db.checkIdExist(table_name, meter_id, "planinfoid"):
@@ -357,7 +357,7 @@ def apiSetMeterIsDone(meter_id, isdone):
         return 1
     try:
         up_dic = {
-            'isdone': isdone,
+            'isDone': isdone,
         }
         # 下面语句要用双引号,单引号报错
         wheresql = "id={};".format(meter_id)

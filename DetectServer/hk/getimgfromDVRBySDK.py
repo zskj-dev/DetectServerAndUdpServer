@@ -15,7 +15,12 @@ import traceback
 from ctypes import *
 from typing import Tuple, Optional
 import weakref
-from config.setting import CAPTURE_WITH_EXE_PATH
+
+if __name__ == "__main__":
+    # 需要根据本地可执行路径填写
+    CAPTURE_WITH_EXE_PATH = r"D:\01_work\01_ZSXK\HC_SDK\DetectAndDownload.exe"
+else:
+    from config.setting import CAPTURE_WITH_EXE_PATH
 
 # 配置日志
 logging.basicConfig(
@@ -427,6 +432,10 @@ class HikvisionCapture:
     def capture_with_exe(self, nvrip, nvrport, username, password, channel, output_file):
         exe_path = CAPTURE_WITH_EXE_PATH
         params = [nvrip, str(nvrport), username, password, str(channel), output_file]
+        # 检查EXE路径是否存在
+        if exe_path is None or not os.path.exists(exe_path):
+            logger.error(f"抓图EXE文件不存在: {exe_path}")
+            return -1
 
         cmd = [exe_path] + params
         
@@ -456,7 +465,7 @@ class HikvisionCapture:
             if stdout:
                 print(f"剩余输出: {stdout}")
             if stderr:
-                print(f"错误: {stderr}")
+                print(f"执行process.communicate错误: {stderr}")
 
             # 判断是否生成了图片文件
             if not os.path.exists(output_file):
@@ -856,14 +865,14 @@ if __name__ == "__main__":
     #SDK_PATH = r"C:\\NVRDownloadImg"
 
     # 检查系统资源
-    check_system_resources()
+    # check_system_resources()
 
     DEVICE_IP = "192.168.0.168"
     DEVICE_PORT = 8000
     USERNAME = "admin"
     PASSWORD = "zskj1225"
     CHANNEL = 33
-    PRESET_ID = 1  # 目标预置点编号
+    PRESET_ID = 2  # 目标预置点编号
     OUTPUT_FILE = f"preset_capture_1.jpg"
     WAIT_SECONDS = 1  # 转动后等待时间
     SPEED = 3
@@ -871,8 +880,8 @@ if __name__ == "__main__":
 
 
     # 测试资源泄漏
-    print("\n运行资源泄漏测试...")
-    test_resource_leak()
+    # print("\n运行资源泄漏测试...")
+    # test_resource_leak()
 
     # 测试实际功能
     print("\n测试实际功能...")
