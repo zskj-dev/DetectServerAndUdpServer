@@ -1082,7 +1082,7 @@ def VisitationPlanThread(mqDetectTask):
                 if isrunnow == None or isrunnow == '':
                     print(f"[Warning]isrunnow element not found in talbe m_visitationplan")
                 else:
-                    print(f"runnow plan not found, id={id}, taskplanname={taskplanname}.")
+                    print(f"current is not runnow plan [id={id}, taskplanname={taskplanname}].")
 
             #--------- 周期任务 start----------
             if taskplantype == 0:  # 周期任务
