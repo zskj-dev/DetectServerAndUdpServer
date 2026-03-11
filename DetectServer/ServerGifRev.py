@@ -134,6 +134,28 @@ def getModelFileTypeErrLevel(modelid, syslevel):
 
     return li
 
+# 根据告警等级从高到低排序，并返回对应的errtypeindex列表
+def getModelFileTypeErrLevelPriority():
+    table_name_model = "m_model"
+    table_name_modelinfo = "m_modelinfo"
+    errtype_priority = []
+    # 先从m_model中找到使能的id，然后根据这个id从m_modelinfo中查询对应的errtypeindex和errtypelevel，最后根据errtypelevel从高到低排序，并返回对应的errtypeindex列表
+    sqltotal = "select id from {} where flag = 1".format(table_name_model)
+    totaldata = db.select_db(sqltotal)
+    if len(totaldata) <= 0:
+        print("get id error: not found",totaldata)
+        return errtype_priority
+
+    modelid = totaldata[0]["id"]
+    sqltotal = "select errtypeindex from {} where modelid = {} order by errtypelevel desc".format(table_name_modelinfo,modelid)
+    totaldata = db.select_db(sqltotal)
+    print("getModelFileTypeErrLevelPriority totaldata:", totaldata)
+
+    for item in totaldata:
+        errtypeindex = item['errtypeindex']
+        errtype_priority.append(errtypeindex)
+    print("get errtpyeindex_list:", errtype_priority)
+    return errtype_priority
 
 def gif_to_frames(gif_bytes):
     # 从字节流中打开GIF文件
@@ -148,9 +170,13 @@ def gif_to_frames(gif_bytes):
     return frames
 
 
-def process_frame(frame_bytes,model,systemsetting):
-    type_counts = {str(k): 0 for k in systemsetting["info"].keys()}  # 初始化类型计数器
-    # 从字节流中打开帧
+# 根据输入的告警类型优先级顺序，修改process_frame函数，使其只检测指定的错误类型，并返回该类型的计数
+def process_frame_priority(frame_bytes, model, systemsetting, target_error_type):
+    """
+    修改版的process_frame，只检测指定的错误类型
+    """
+    type_counts = {str(target_error_type): 0}
+
     with Image.open(io.BytesIO(frame_bytes)) as img:
         rgb_img = img.convert("RGB")
         #print(rgb_img.mode)
@@ -159,24 +185,20 @@ def process_frame(frame_bytes,model,systemsetting):
             boxes = result.boxes.data.cpu().numpy()
             for box in boxes:
                 x1, y1, x2, y2, conf, cls = box
-                if systemsetting["info"].get(str(int(cls)), 0) == 1:
-                    # 获取类别名称（根据你的模型类别定义）
+                if str(int(cls)) == str(target_error_type) and systemsetting["info"].get(str(int(cls)), 0) == 1:
                     class_name = model.names[int(cls)]
-                    # 在图像上绘制边界框和类别名称
                     draw = ImageDraw.Draw(rgb_img)
                     color = localcolors[int(cls) % len(localcolors)]
                     color = color_mapping[color]
                     draw.rectangle([x1, y1, x2, y2], outline=color, width=2)
-                    #draw.rectangle([x1, y1, x2, y2],  width=2)
                     draw.text((x1, y1 - 10), f"{class_name} {conf:.2f}", fill=color)
-                    #draw.text((x1, y1 - 10), f"{class_name} {conf:.2f}")
-                    print("class_name:", class_name, [x1, y1, x2, y2],color)
-                    # 增加对应类别的计数
+                    print("class_name:", class_name, [x1, y1, x2, y2], color)
                     type_counts[str(int(cls))] += 1
-        # 将处理后的帧保存到内存中的字节流
+
         processed_bytes = io.BytesIO()
         rgb_img.save(processed_bytes, format="PNG")
-        return processed_bytes.getvalue(),type_counts
+        return processed_bytes.getvalue(), type_counts
+
 def frames_to_gif(frames, output_gif_path, duration=100):
     # 从第一帧获取模式和尺寸
     try:
@@ -205,33 +227,69 @@ def DetectGifThread(mqDetectTask, systemsetting):
             with open(giffilenamefile_path, "rb") as f:
                 gif_bytes = f.read()
                 frames = gif_to_frames(gif_bytes)
-                # 对帧进行处理（在内存中）
+
+                # 获取错误类型及其优先级顺序
+                error_types = getModelFileTypeErrLevelPriority()
+
+                # 初始化检测结果
+                detected_error = None
+                error_count = 0
                 processed_frames = []
-                total_type_counts = {str(k): 0 for k in systemsetting["info"].keys()}  # 初始化总计数器
-                for frame in frames:
-                    processed_frame, type_counts = process_frame(frame, model, systemsetting)
-                    processed_frames.append(processed_frame)
-                    #print("detect:", type_counts)
-                    # 更新总计数器
-                    for key, count in type_counts.items():
-                        total_type_counts[key] += count
-                #processed_frames = [process_frame(frame,model,systemsetting) for frame in frames]
 
-                # 确定出现最多的类型
-                most_common_type = max(total_type_counts, key=total_type_counts.get)
-                print(f"Most common type: {most_common_type} with count {total_type_counts[most_common_type]}")
-                # 将处理后的帧重新组合成GIF并保存到本地
+                # 按优先级顺序检查错误
+                for priority_error in error_types:
+                    print(f"Checking for priority error type: {priority_error}")
+                    current_error_count = 0
+                    current_processed_frames = []
+
+                    # 处理所有帧，统计当前优先级错误的出现次数
+                    for frame in frames:
+                        processed_frame, type_counts = process_frame_priority(
+                            frame, model, systemsetting, priority_error
+                        )
+                        # 累加当前优先级错误的计数
+                        current_processed_frames.append(processed_frame)
+                        current_error_count += type_counts.get(str(priority_error), 0)  # 使用get方法更安全
+
+                    print(f"Priority error {priority_error} total count: {current_error_count}")
+
+                    # 如果当前优先级错误达到阈值，立即采用这个结果
+                    if current_error_count >= 3:
+                        detected_error = priority_error
+                        error_count = current_error_count
+                        processed_frames = current_processed_frames
+                        print(f"Found priority error: {priority_error} with count {error_count}")
+                        break
+
+                # 如果所有优先级都没有找到错误（计数<3），使用第一个优先级作为默认
+                if not detected_error:
+                    detected_error = error_types[0] if error_types else "0"
+                    error_count = 0
+                    # 重新处理所有帧，使用默认错误类型
+                    processed_frames = []
+                    for frame in frames:
+                        processed_frame, type_counts = process_frame_priority(
+                            frame, model, systemsetting, detected_error
+                        )
+                        processed_frames.append(processed_frame)
+                        if detected_error in type_counts:
+                            error_count += type_counts[detected_error]
+                    print(f"No errors detected, using default: {detected_error} with count {error_count}")
+
+                # 将处理后的帧重新组合成GIF并保存
                 frames_to_gif(processed_frames, giffilenamefile_path, duration=400)
-                state = 0
-                if (total_type_counts[most_common_type] == 0):
-                    state = 1
-                elif (total_type_counts[most_common_type] >= 3):
-                    state = 3
-                else:
-                    state = 1
 
-                sql = "update m_errorinfo set errortype={},state={} where gifname='{}'".format(most_common_type,state,giffilename)
-                print("----AlarmInfoHandler sql:",sql)
+                # 确定状态
+                state = 1  # 默认状态
+                if error_count == 0:
+                    state = 1
+                elif error_count >= 3:
+                    state = 3
+
+                sql = "update m_errorinfo set errortype={},state={} where gifname='{}'".format(
+                    detected_error, state, giffilename
+                )
+                print("----AlarmInfoHandler sql:", sql)
                 db.execute_db(sql)
                 print("----AlarmInfoHandler sql over!")
 
