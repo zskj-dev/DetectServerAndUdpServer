@@ -290,12 +290,12 @@ def apiSetRobotStatus(robot_id = 1, robot_status = 0):
 
 def apiSetMeterCheckStatus(meter_id, status):
     """
-    设置表计巡检状态,表计表格m_visitationplaninfo_meter_2中的status字段
+    设置表计巡检状态,表计表格m_visitationplaninfo_meter中的status字段
     参数：
         meter_id: 表计ID
         status: 状态值: 巡检状态：0：无效，1：成功，2：失败，3：进行中
     """
-    table_name = "m_visitationplaninfo_meter_2"
+    table_name = "m_visitationplaninfo_meter"
     if not db.checkIdExist(table_name, meter_id, "planinfoid"):
         print(f"Not found id: {meter_id} in {table_name}")
         return 1
@@ -315,7 +315,7 @@ def apiSetMeterCheckStatus(meter_id, status):
 
 def apiGetMeterCheckStatus(meter_id):
     """
-    获取表计巡检状态,表计表格m_visitationplaninfo_meter_2中的status字段
+    获取表计巡检状态,表计表格m_visitationplaninfo_meter中的status字段
     参数：
         meter_id: 表计ID
     返回:
@@ -331,7 +331,7 @@ def apiGetMeterCheckStatus(meter_id):
         2: "检测中",
         3: "未知状态"
     }
-    table_name = "m_visitationplaninfo_meter_2"
+    table_name = "m_visitationplaninfo_meter"
     sqlstr = "SELECT status FROM {} WHERE id = {}".format(table_name, meter_id)
     try:
         select_result = db.select_db(sqlstr)
@@ -346,12 +346,12 @@ def apiGetMeterCheckStatus(meter_id):
 
 def apiSetMeterIsDone(meter_id, isdone):
     """
-        设置表计巡检状态,表计表格m_visitationplaninfo_meter_2中的status字段
+        设置表计巡检状态,表计表格m_visitationplaninfo_meter中的status字段
         参数：
             meter_id: 表计ID
             isDone: 是否完成巡检: 0-未巡检，1-已巡检
         """
-    table_name = "m_visitationplaninfo_meter_2"
+    table_name = "m_visitationplaninfo_meter"
     if not db.checkIdExist(table_name, meter_id, "planinfoid"):
         print(f"Not found id: {meter_id} in {table_name}")
         return 1
@@ -377,7 +377,7 @@ def apiGetMeterDoneCount(planid):
     返回:
         int: 已完成巡检的表计数量
     """
-    table_name = "m_visitationplaninfo_meter_2"
+    table_name = "m_visitationplaninfo_meter"
     sqlstr = "SELECT COUNT(*) AS done_count FROM {} WHERE planid = {} AND isDone = 1".format(table_name, planid)
     try:
         select_result = db.select_db(sqlstr)

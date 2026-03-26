@@ -4977,7 +4977,7 @@ def GetScheduleStatus():
             t1.value_int,   \
             t1.value_str as unitResult, \
             t2.watchpoint   \
-        FROM m_visitationplaninfo_meter_2 t1    \
+        FROM m_visitationplaninfo_meter t1    \
         LEFT JOIN m_metername_point t2 ON t1.metername_id = t2.id   \
         LEFT JOIN m_camera_point ca_p ON t2.watchpoint = ca_p.point_id \
         WHERE t1.planid = {};".format(id)
