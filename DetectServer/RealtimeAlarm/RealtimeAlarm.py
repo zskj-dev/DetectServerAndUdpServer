@@ -2637,6 +2637,47 @@ def GetVisitationPlanSubHisList():
     return json.dumps(req.__dict__, ensure_ascii=False)
 
 '''
+    22.3 获取巡视检测任务执行历史列表和子项列表（按照时间段筛选）
+'''
+@realtimealarm.route('/GetVisitationPlanHisListByTime', methods=["post"])
+def GetVisitationPlanHisListDuringTheTime():
+    taskid = request.form.get("taskid")
+    # time_range_start/time_range_stop的输入要求满足datetimeg格式
+    # "%Y-%m-%d %H:%M:%S"，例如"2024-01-01 00:00:00"
+    time_range_start = request.form.get("time_range_start")
+    time_range_stop = request.form.get("time_range_stop")
+    req = ReqResult()
+    if taskid == None or time_range_start == None or time_range_stop == None:
+        req.code = 1
+        req.msg = "参数不正确"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    current_app.logger.info('GetVisitationPlanHisListByTime ')
+
+    sqltotal = f"SELECT * FROM m_visitationplanhistory WHERE taskplanid = {taskid} AND taskstarttime BETWEEN '{time_range_start}' AND '{time_range_stop}' ORDER BY taskstarttime DESC"
+    print("Debug SQL:", sqltotal)
+    totaldata = db.select_db(sqltotal)
+
+    for i in totaldata:
+        i["taskstarttime"] = i["taskstarttime"].strftime("%Y-%m-%d %H:%M:%S")
+        i["taskendtime"] = i["taskendtime"].strftime("%Y-%m-%d %H:%M:%S")
+    print("GetVisitationPlanHisList:", totaldata)
+    sqltotal = "select count(*) as cnt from m_visitationplanhistory WHERE taskplanid = {}".format(taskid)
+
+    cntdata = db.select_db(sqltotal)
+    current_app.logger.info('GetVisitationPlanHisList cntdata:{}'.format(cntdata))
+
+    # 数据拼接
+    dateInfo = {}
+    dateInfo["datas"] = totaldata
+    dateInfo["count"] = len(totaldata)
+    dateInfo["total"] = cntdata[0]["cnt"]
+    req.code = 0
+    req.msg = "获取数据成功"
+    req.data = dateInfo
+    return json.dumps(req.__dict__, ensure_ascii=False)
+
+'''
     23. 获取检修区域列表
 '''
 @realtimealarm.route('/GetJXRoomList', methods=["post"])
