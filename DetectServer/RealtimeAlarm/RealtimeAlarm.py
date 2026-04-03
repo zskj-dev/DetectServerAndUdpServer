@@ -2641,11 +2641,11 @@ def GetVisitationPlanSubHisList():
 '''
 @realtimealarm.route('/GetVisitationPlanHisListByTime', methods=["post"])
 def GetVisitationPlanHisListDuringTheTime():
-    taskid = request.form.get("taskid")
+    taskid = request.form.get("taskplanid")
     # time_range_start/time_range_stop的输入要求满足datetimeg格式
     # "%Y-%m-%d %H:%M:%S"，例如"2024-01-01 00:00:00"
-    time_range_start = request.form.get("time_range_start")
-    time_range_stop = request.form.get("time_range_stop")
+    time_range_start = request.form.get("time_start")
+    time_range_stop = request.form.get("time_stop")
     req = ReqResult()
     if taskid == None or time_range_start == None or time_range_stop == None:
         req.code = 1
@@ -5107,7 +5107,7 @@ def GetUnintList():
 @realtimealarm.route('/scheduleResult', methods=["post"])
 def GetScheduleResult():
     tabale_name_robot = "m_robot"
-    table_name_visitationplan = "m_visitationplan"
+    table_name_visitationplan = "m_visitationplanhistory"
 
     req = ReqResult()
     robot_id = request.form.get("robotId")
