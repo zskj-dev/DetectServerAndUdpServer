@@ -2559,8 +2559,25 @@ def SetVisitationPlanStateToRunNowPlan():
     wheresql                    = 'id={};'.format(taskid)
     db.updateData("m_visitationplan", isrunnow_dic, wheresql)
 
+    # 从历史任务里查询最新一条任务获取其ID
+    select_sql = "select id from m_visitationplanhistory where taskplanid={} order by id desc limit 1;".format(taskid)
+    select_result = db.select_db(select_sql)
+    if len(select_result) > 0:
+        latest_history_id = select_result[0]['id']
+        # 将该历史任务的结束时间修改为当前时间，表示立即执行的任务与之前的历史任务无缝衔接
+        update_sql = "update m_visitationplanhistory set taskendtime='{}' where id={};".format(
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), latest_history_id)
+        db.execute_db(update_sql)
+    else:
+        req.code = 3
+        req.msg = "任务虽然下发，但是没有从历史任务中获取正确的jobId"
+        return json.dumps(req.__dict__, ensure_ascii=False)
+
+    datainfo = {}
+    datainfo['jobId'] = latest_history_id
     req.code = 0
     req.msg = "操作成功"
+    req.data = datainfo
 
     return json.dumps(req.__dict__, ensure_ascii=False)
 
