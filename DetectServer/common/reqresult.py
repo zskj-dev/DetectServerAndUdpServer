@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-
+from common.mysqloptor import db
 
 class ReqResult:
     def __init__(self):
@@ -127,6 +127,35 @@ class InspectionReport:
     conclusion: List[str]  # 巡检结论
     result: List[UnitResult]  # 巡检结果列表
 
+
+def get_inspection_data_from_db() :
+    sql_select = "SELECT  t2.name as unitName, \
+            t1.id as unitId,  \
+            (       \
+                case                        \
+                WHEN ( t2.type = '1')          \
+            THEN                        \
+            '状态灯'           \
+            WHEN(t2.type = '2' ) THEN       \
+            '状态灯' \
+            WHEN(t2.type = '4') THEN \
+            '状态灯'   \
+            WHEN(t2.type = '5') THEN  \
+            '状态灯'  \
+            WHEN(t2.type = '3' ) THEN  \
+            '开关'  \
+            END  \
+            ) AS   \
+            `unitType`,  \
+        t1.id as cabinetId,  \
+        ca_p.point_info as cabinetName, \
+        t1.value_str as unitResult \
+        FROM m_visitationplaninfo_meter \
+        t1 LEFT JOIN m_metername_point t2 ON t1.metername_id = t2.id LEFT JOIN  m_camera_point ca_p \
+        ON t2.watchpoint = ca_p.point_id;"
+
+    unit_results = db.select_db(sql_select)
+    return unit_results
 
 # 使用示例
 def create_sample_inspection_report():
